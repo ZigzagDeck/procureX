@@ -45,8 +45,14 @@ def _parse_with_llm(query: str, api_key: str) -> Optional[dict]:
 
 def _parse_with_rules(query: str) -> dict:
     q = query.lower()
+        # Extract item category dynamically from search query
+    cat_fallback = 'general_supplies'
+    words = [w for w in q.split() if w not in ['find', 'need', 'require', 'order', 'buy', 'purchase', 'get', 'under', 'for', 'in', 'with']]
+    if words:
+        cat_fallback = '_'.join(words[:2])
+        
     data = {
-        'product_category': 'safety_gloves', 'material': '', 'application': 'industrial_safety',
+        'product_category': cat_fallback, 'material': '', 'application': 'industrial_safety',
         'size': None, 'quantity': 0, 'maximum_unit_price': None, 'currency': 'INR',
         'destination': '', 'delivery_days': None, 'preferred_supplier_type': None,
         'certification_requirements': [], 'procurement_mode': 'balanced',

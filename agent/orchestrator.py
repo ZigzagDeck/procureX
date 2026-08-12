@@ -46,7 +46,8 @@ class ResearchOrchestrator:
                     if not result.url: continue
                     fetched = await self.search_source.fetch(result.url)
                     if fetched.content:
-                        suppliers = self.extractor.extract_from_text(fetched.content, result.url, 'web_search')
+                        prod_label = requirement.product_category.replace('_', ' ').title()
+                        suppliers = self.extractor.extract_from_text(fetched.content, result.url, 'web_search', product_name=prod_label)
                         session.suppliers.extend(suppliers)
                         session.add_log(ResearchPhase.EXTRACTING, f'{result.url}: {len(suppliers)} suppliers')
                 except Exception as e:
@@ -91,11 +92,34 @@ class ResearchOrchestrator:
 
             session.phase = ResearchPhase.SCORING
             budget_mgr = BudgetManager(session.budget)
+            x402_client = X402Client()
+            
             for s in active:
                 score = self.scoring_engine.score_supplier(s, requirement, delivery=deliveries.get(s.id), evidence_graph=s.evidence)
+                
+                # Check for Price Intelligence Information Gap on top candidates
+                if score.total_score >= 45:
+                    price_uncert = 0.3 if not s.products or not s.products[0].normalized_unit_price else 0.1
+                    intel_decision = budget_mgr.should_purchase_price_intel(s, score, price_uncertainty=price_uncert)
+                    
+                    if intel_decision.should_purchase:
+                        request_data = {
+                            'product_category': requirement.product_category,
+                            'material': requirement.material,
+                            'quantity': requirement.quantity,
+                            'region': requirement.destination
+                        }
+                        intel_data, tx = await x402_client.call_service(
+                            ServiceType.PRICE_INTELLIGENCE, request_data, intel_decision
+                        )
+                        session.budget.record_purchase(tx)
+                        if tx.status == PaymentStatus.COMPLETED and intel_data:
+                            session.add_log(ResearchPhase.SCORING, f"Paid x402 Intel for {s.name}: ${intel_decision.cost}")
+                            
                 session.scores.append(score)
+                
             session.scores.sort(key=lambda x: x.total_score, reverse=True)
-            session.add_log(ResearchPhase.SCORING, f'Scored {len(session.scores)} suppliers')
+            session.add_log(ResearchPhase.SCORING, f'Scored {len(session.scores)} suppliers with budget auditing complete.')
 
             session.phase = ResearchPhase.COMPLETED
             session.add_log(ResearchPhase.COMPLETED, 'Research complete!')
