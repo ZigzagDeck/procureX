@@ -14,6 +14,11 @@ def apply_custom_css():
     html, body, [class*="css"]  {
         font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     }
+
+    /* Hide default Streamlit sidebar native page list */
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
     
     .stApp {
         background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #090d16 100%);
@@ -130,7 +135,7 @@ def main():
     # Sidebar Header at the VERY TOP
     st.sidebar.markdown(
         """
-        <div style='text-align: center; margin-bottom: 24px; padding-top: 10px;'>
+        <div style='text-align: center; margin-bottom: 20px; padding-top: 10px;'>
             <h1 style='margin-bottom: 4px; font-size: 2rem;'><span class="gradient-text">ProcureX</span></h1>
             <p style='color: #94a3b8; font-size: 0.85rem; font-weight: 500; margin-top:0;'>Autonomous B2B Procurement Agent</p>
         </div>
@@ -141,12 +146,13 @@ def main():
     st.sidebar.markdown("### Navigation")
     
     pages = [
-        ("Requirement Input", "pages/1_research.py"),
-        ("Live Screening Status", "pages/2_live_research.py"),
-        ("Discovered Suppliers", "pages/3_suppliers.py"),
-        ("Evidence Browser", "pages/4_evidence.py"),
-        ("Economic Trace & Quota Tracker", "pages/5_economic_trace.py"),
-        ("Final Recommendation Report", "pages/6_final_report.py"),
+        ("App Home", "app.py"),
+        ("Requirement Input", "pages/1_Requirement_Input.py"),
+        ("Live Screening Status", "pages/2_Live_Screening_Status.py"),
+        ("Discovered Suppliers", "pages/3_Discovered_Suppliers.py"),
+        ("Evidence Browser", "pages/4_Evidence_Browser.py"),
+        ("Economic Trace & Quota Tracker", "pages/5_Economic_Trace.py"),
+        ("Final Recommendation Report", "pages/6_Final_Report.py"),
     ]
     
     for title, path in pages:
@@ -252,7 +258,7 @@ def main():
     btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1])
     with btn_col2:
         if st.button("Start Procurement Research Session", type="primary", use_container_width=True):
-            st.switch_page("pages/1_research.py")
+            st.switch_page("pages/1_Requirement_Input.py")
 
 if __name__ == "__main__":
     main()

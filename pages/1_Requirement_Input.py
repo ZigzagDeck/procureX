@@ -82,4 +82,4 @@ if "parsed_requirement" in st.session_state and st.session_state.parsed_requirem
         )
         st.session_state.research_session = session
         st.session_state.research_active = True
-        st.switch_page("pages/2_live_research.py")
+        st.switch_page("pages/2_Live_Screening_Status.py")

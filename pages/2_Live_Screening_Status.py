@@ -22,7 +22,7 @@ session = st.session_state.get("research_session")
 if not session or not session.requirement:
     st.warning("No active research session. Please enter a procurement requirement first.")
     if st.button("Go to Requirement Input"):
-        st.switch_page("pages/1_research.py")
+        st.switch_page("pages/1_Requirement_Input.py")
     st.stop()
 
 # Run research if not already started/completed
@@ -32,7 +32,7 @@ if session.phase == ResearchPhase.NOT_STARTED:
         asyncio.run(orchestrator.run_research(session.requirement, session))
         st.success("Live screening completed!")
 
-# Status metrics header (Sources Consulted and Budget Spent REMOVED)
+# Status metrics header
 c1, c2, c3 = st.columns(3)
 c1.metric("Status Phase", session.phase.value.replace("_", " ").title())
 c2.metric("Discovered Suppliers", f"{len(session.suppliers)}")
@@ -63,12 +63,12 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("View Discovered Suppliers", use_container_width=True):
-        st.switch_page("pages/3_suppliers.py")
+        st.switch_page("pages/3_Discovered_Suppliers.py")
 
 with col2:
     if st.button("Browse Evidence Verification", use_container_width=True):
-        st.switch_page("pages/4_evidence.py")
+        st.switch_page("pages/4_Evidence_Browser.py")
 
 with col3:
     if st.button("Generate Recommendation Report", type="primary", use_container_width=True):
-        st.switch_page("pages/6_final_report.py")
+        st.switch_page("pages/6_Final_Report.py")
