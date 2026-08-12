@@ -10,6 +10,8 @@ from processing.geographic import GeographicAnalyzer
 from verification.evidence_collector import EvidenceCollector
 from agent.budget_manager import BudgetManager
 from agent.planner import ResearchPlanner
+from x402.client import X402Client
+from models.budget import ServiceType, PaymentStatus
 from datetime import date
 
 class ResearchOrchestrator:
@@ -124,5 +126,6 @@ class ResearchOrchestrator:
             session.phase = ResearchPhase.COMPLETED
             session.add_log(ResearchPhase.COMPLETED, 'Research complete!')
         except Exception as e:
-            session.phase = ResearchPhase.ERROR
-            session.add_log(ResearchPhase.ERROR, f'Research failed: {e}')
+            session.phase = ResearchPhase.FAILED
+            session.error_message = str(e)
+            session.add_log(ResearchPhase.FAILED, f'Research failed: {e}')

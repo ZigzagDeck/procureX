@@ -29,7 +29,12 @@ if session.phase == ResearchPhase.NOT_STARTED:
     with st.spinner("Executing autonomous supplier discovery, verification, and scoring pipeline..."):
         orchestrator = ResearchOrchestrator()
         asyncio.run(orchestrator.run_research(session.requirement, session))
-        st.success("Research completed!")
+        if session.phase == ResearchPhase.FAILED:
+            st.error(f"❌ Research failed: {session.error_message}")
+        else:
+            st.success("Research completed!")
+elif session.phase == ResearchPhase.FAILED:
+    st.error(f"❌ Research failed: {session.error_message}")
 
 # Status metrics header
 c1, c2, c3, c4, c5 = st.columns(5)
