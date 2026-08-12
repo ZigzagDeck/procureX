@@ -39,6 +39,8 @@ class PaymentTransaction(BaseModel):
     supplier_id: str
     amount: float
     currency: str = "USD"
+    amount_inr: float = 0.0
+    fx_rate: float = 0.0
     status: PaymentStatus = PaymentStatus.PENDING
     decision: PaymentDecision
     response_summary: str = ""
@@ -53,6 +55,7 @@ class ResearchBudget(BaseModel):
     initial_budget: float = 0.020  # USD
     remaining_budget: float = 0.020
     total_spent: float = 0.0
+    prepaid_balance_usd: float = 0.0
     transactions: list[PaymentTransaction] = Field(default_factory=list)
     decisions: list[PaymentDecision] = Field(default_factory=list)  # all decisions, including skips
     
