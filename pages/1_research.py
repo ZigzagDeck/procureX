@@ -7,7 +7,7 @@ from storage.session import ResearchSession
 from models.budget import ResearchBudget
 from models.requirement import ProcurementMode
 
-st.set_page_config(page_title="ProcureX — Requirement Input", page_icon="📝", layout="wide")
+st.set_page_config(page_title="ProcureX — Requirement Input", layout="wide")
 
 try:
     from app import apply_custom_css, init_session_state
@@ -16,8 +16,8 @@ try:
 except Exception:
     pass
 
-st.markdown("<h1>📝 Procurement <span class='gradient-text'>Requirement Input</span></h1>", unsafe_allow_html=True)
-st.markdown("*Describe your procurement needs in natural language for Gemini LLM parsing and autonomous research.*")
+st.markdown("<h1>Requirement <span class='gradient-text'>Input</span></h1>", unsafe_allow_html=True)
+st.markdown("*Describe your procurement needs in natural language for AI parsing and autonomous research.*")
 
 CANONICAL_QUERY = (
     "Find 5,000 medium-sized nitrile industrial safety gloves under ₹80 per piece, "
@@ -27,9 +27,9 @@ CANONICAL_QUERY = (
 
 st.markdown("""
 <div class="glass-card" style="padding: 1.2rem; margin-bottom: 1.5rem;">
-    <h4 style="margin-top: 0; font-size: 1rem; color: #38bdf8;">💡 Example Requirement Prompt</h4>
+    <h4 style="margin-top: 0; font-size: 1rem; color: #38bdf8;">Example Requirement Prompt</h4>
     <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0;">
-        Include quantity, product specs, target budget per unit, delivery city, and supplier type preference.
+        Include quantity, product specs, target budget per unit, destination, and supplier preference if available.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -60,8 +60,8 @@ with col_b:
         help="Research budget allocated for information buying."
     )
 
-if st.button("🔍 Parse & Validate Requirement Specification", type="primary", use_container_width=True):
-    with st.spinner("Analyzing prompt with Gemini LLM & extraction pipeline..."):
+if st.button("Parse & Validate Requirement Specification", type="primary", use_container_width=True):
+    with st.spinner("Analyzing prompt with extraction pipeline..."):
         requirement = parse_requirement(query_input)
         if procurement_mode == "cost_optimized":
             requirement.procurement_mode = ProcurementMode.COST_OPTIMIZED
@@ -74,24 +74,8 @@ if st.button("🔍 Parse & Validate Requirement Specification", type="primary", 
 
 if "parsed_requirement" in st.session_state and st.session_state.parsed_requirement:
     req = st.session_state.parsed_requirement
-
-    st.markdown("---")
-    st.markdown("### 📋 Parsed Specification Summary")
-
-    try:
-        from ui.components.requirement_card import render_requirement_card
-        render_requirement_card(req)
-    except Exception:
-        c1, c2, c3 = st.columns(3)
-        c1.markdown(f"**Product:** {req.product_category}")
-        c1.markdown(f"**Material:** {req.material}")
-        c2.markdown(f"**Quantity:** {req.quantity:,}")
-        c2.markdown(f"**Max Unit Price:** ₹{req.maximum_unit_price}/piece")
-        c3.markdown(f"**Destination:** {req.destination}")
-        c3.markdown(f"**Mode:** {req.procurement_mode.value.replace('_', ' ').title()}")
-
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🚀 Launch Autonomous Research Agent", type="primary", use_container_width=True):
+    if st.button("Launch Autonomous Research Agent", type="primary", use_container_width=True):
         session = ResearchSession(
             requirement=req,
             budget=ResearchBudget(initial_budget=budget_val, remaining_budget=budget_val)

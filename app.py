@@ -2,7 +2,6 @@ import streamlit as st
 
 st.set_page_config(
     page_title="ProcureX — Autonomous Procurement Intelligence",
-    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -123,33 +122,31 @@ def init_session_state():
         st.session_state.transactions = []
     if "progress_log" not in st.session_state:
         st.session_state.progress_log = []
-    if "quota_used" not in st.session_state:
-        st.session_state.quota_used = 12
 
 def main():
     apply_custom_css()
     init_session_state()
 
-    # Sidebar Header
+    # Sidebar Header at the VERY TOP
     st.sidebar.markdown(
         """
         <div style='text-align: center; margin-bottom: 24px; padding-top: 10px;'>
-            <h1 style='margin-bottom: 4px; font-size: 1.8rem;'><span class="gradient-text">ProcureX</span></h1>
-            <p style='color: #94a3b8; font-size: 0.85rem; font-weight: 500;'>Autonomous B2B Procurement Agent</p>
+            <h1 style='margin-bottom: 4px; font-size: 2rem;'><span class="gradient-text">ProcureX</span></h1>
+            <p style='color: #94a3b8; font-size: 0.85rem; font-weight: 500; margin-top:0;'>Autonomous B2B Procurement Agent</p>
         </div>
         """,
         unsafe_allow_html=True
     )
     
-    st.sidebar.markdown("### 📌 Navigation")
+    st.sidebar.markdown("### Navigation")
     
     pages = [
-        ("📝 1. Requirement Input", "pages/1_research.py"),
-        ("📡 2. Live Research Status", "pages/2_live_research.py"),
-        ("🏭 3. Discovered Suppliers", "pages/3_suppliers.py"),
-        ("🔗 4. Evidence Browser", "pages/4_evidence.py"),
-        ("💰 5. Economic Trace & Quota", "pages/5_economic_trace.py"),
-        ("📋 6. Final Recommendation Report", "pages/6_final_report.py"),
+        ("Requirement Input", "pages/1_research.py"),
+        ("Live Screening Status", "pages/2_live_research.py"),
+        ("Discovered Suppliers", "pages/3_suppliers.py"),
+        ("Evidence Browser", "pages/4_evidence.py"),
+        ("Economic Trace & Quota Tracker", "pages/5_economic_trace.py"),
+        ("Final Recommendation Report", "pages/6_final_report.py"),
     ]
     
     for title, path in pages:
@@ -159,9 +156,8 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown(
         """
-        <div style='font-size:0.8rem; color:#64748b; text-align:center;'>
-            <strong>ProcureX Architecture</strong><br>
-            Gemini 2.0 &bull; x402 Micropayments &bull; FX Engine
+        <div style='font-size:0.85rem; color:#94a3b8; text-align:center; font-weight:600;'>
+            An APEX Creation
         </div>
         """,
         unsafe_allow_html=True
@@ -175,7 +171,7 @@ def main():
             </h1>
             <p style="font-size: 1.15rem; color: #94a3b8; line-height: 1.6;">
                 ProcureX transforms natural language procurement requests into verified, multi-supplier recommendations. 
-                Powered by Gemini LLM parsing, autonomous live web search, and economic micro-query data verification.
+                Powered by autonomous live web search, supplier matching, and economic micro-query data verification.
             </p>
         </div>
     """, unsafe_allow_html=True)
@@ -187,11 +183,11 @@ def main():
         st.markdown("""
         <div class="glass-card" style="height: 100%;">
             <div class="step-badge">Platform Purpose</div>
-            <h3 style="margin-top: 4px;">🎯 What ProcureX Solves</h3>
+            <h3 style="margin-top: 4px;">What ProcureX Solves</h3>
             <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
-                B2B procurement in industrial and commercial markets is fragmented and opaque. 
+                B2B procurement in commercial markets is fragmented. 
                 ProcureX acts as an <strong>autonomous AI agent</strong> that discovers suppliers across web registries, 
-                extracts real product specifications, normalizes bulk tier pricing, and scores candidates across 6 objective dimensions.
+                extracts real product specifications, normalizes pricing, and ranks candidates objectively.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -200,17 +196,17 @@ def main():
         st.markdown("""
         <div class="glass-card" style="height: 100%;">
             <div class="step-badge">Engine Architecture</div>
-            <h3 style="margin-top: 4px;">⚡ Core Capabilities</h3>
+            <h3 style="margin-top: 4px;">Core Capabilities</h3>
             <ul style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.8; padding-left: 1.2rem; margin-bottom: 0;">
-                <li><strong>Gemini Natural Language Parsing:</strong> Extracts category, specs, budget, destination, and deadline.</li>
-                <li><strong>Live Web Discovery:</strong> Autonomous real-time search via DuckDuckGo B2B index.</li>
-                <li><strong>Multidimensional Scoring:</strong> Product fit, price competitiveness, MOQ compliance, and evidence quality.</li>
+                <li><strong>Natural Language Parsing:</strong> Extracts category, material, quantity, budget, and destination.</li>
+                <li><strong>Live Web Screening:</strong> Autonomous real-time search across live web indices.</li>
+                <li><strong>Candidate Ranking:</strong> Supplier matching based on available price and MOQ data.</li>
                 <li><strong>x402 Micropayment Protocol:</strong> Automated info-buying with real-time USD/INR FX conversion.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
         
-    st.markdown("<h2 style='text-align: center; margin: 2.5rem 0 1.5rem 0;'>📋 How To Use <span class='gradient-text'>ProcureX</span></h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; margin: 2.5rem 0 1.5rem 0;'>How To Use <span class='gradient-text'>ProcureX</span></h2>", unsafe_allow_html=True)
     
     # 4-Step Interactive Workflow Guide
     s1, s2, s3, s4 = st.columns(4)
@@ -219,7 +215,7 @@ def main():
         st.markdown("""
         <div class="glass-card" style="text-align: center;">
             <div class="step-badge">Step 1</div>
-            <h4>📝 Requirement</h4>
+            <h4>Requirement Input</h4>
             <p style="color: #94a3b8; font-size: 0.85rem;">Enter your exact procurement request in simple English (e.g. 5,000 nitrile gloves under ₹80/pc).</p>
         </div>
         """, unsafe_allow_html=True)
@@ -228,8 +224,8 @@ def main():
         st.markdown("""
         <div class="glass-card" style="text-align: center;">
             <div class="step-badge">Step 2</div>
-            <h4>📡 Research</h4>
-            <p style="color: #94a3b8; font-size: 0.85rem;">Watch the AI agent autonomously search, parse web pages, deduplicate candidates, and query pricing.</p>
+            <h4>Live Screening</h4>
+            <p style="color: #94a3b8; font-size: 0.85rem;">The AI agent searches live web indices. <strong>Please wait at least 30s–1min for live screening to generate results.</strong></p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -237,8 +233,8 @@ def main():
         st.markdown("""
         <div class="glass-card" style="text-align: center;">
             <div class="step-badge">Step 3</div>
-            <h4>🏭 Evaluation</h4>
-            <p style="color: #94a3b8; font-size: 0.85rem;">Review discovered suppliers, benchmark pricing, check MOQ compatibility, and inspect evidence graphs.</p>
+            <h4>Supplier Evaluation</h4>
+            <p style="color: #94a3b8; font-size: 0.85rem;">Review discovered suppliers, inspect direct website links, and check unit price and MOQ information.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -246,8 +242,8 @@ def main():
         st.markdown("""
         <div class="glass-card" style="text-align: center;">
             <div class="step-badge">Step 4</div>
-            <h4>📋 Recommendation</h4>
-            <p style="color: #94a3b8; font-size: 0.85rem;">Export the executive report featuring top-ranked suppliers, alternative options, and full economic trace.</p>
+            <h4>Recommendation Report</h4>
+            <p style="color: #94a3b8; font-size: 0.85rem;">Export the executive procurement report featuring top-ranked suppliers in PDF or Markdown format.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -255,7 +251,7 @@ def main():
     
     btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1])
     with btn_col2:
-        if st.button("🚀 Start Procurement Research Session", type="primary", use_container_width=True):
+        if st.button("Start Procurement Research Session", type="primary", use_container_width=True):
             st.switch_page("pages/1_research.py")
 
 if __name__ == "__main__":

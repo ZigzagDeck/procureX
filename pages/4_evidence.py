@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-st.set_page_config(page_title="ProcureX — Evidence Browser", page_icon="🔗", layout="wide")
+st.set_page_config(page_title="ProcureX — Evidence Browser", layout="wide")
 
 try:
     from app import apply_custom_css, init_session_state
@@ -11,7 +11,7 @@ try:
 except Exception:
     pass
 
-st.markdown("<h1>🔗 Evidence <span class='gradient-text'>Browser</span></h1>", unsafe_allow_html=True)
+st.markdown("<h1>Evidence <span class='gradient-text'>Browser</span></h1>", unsafe_allow_html=True)
 st.markdown("*Source provenance and verification status for all supplier claims.*")
 
 session = st.session_state.get("research_session")
@@ -19,9 +19,9 @@ session = st.session_state.get("research_session")
 if not session or not getattr(session, "suppliers", None):
     st.markdown("""
     <div class="glass-card" style="text-align:center; padding:3rem;">
-        <h3>📭 No Evidence Available</h3>
+        <h3>No Evidence Available</h3>
         <p style="color:#94a3b8;">Complete a research session to view supplier evidence and web source provenance.</p>
-        <p style="color:#64748b;">Navigate to <strong>1. Requirement Input</strong> to start.</p>
+        <p style="color:#64748b;">Navigate to <strong>Requirement Input</strong> to start.</p>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
@@ -33,19 +33,15 @@ if not active_suppliers:
     st.stop()
 
 supplier_names = {s.name: s for s in active_suppliers}
-selected_name = st.selectbox("🏢 Select Supplier Candidate:", list(supplier_names.keys()))
+selected_name = st.selectbox("Select Supplier Candidate:", list(supplier_names.keys()))
 supplier = supplier_names[selected_name]
 
 st.markdown("---")
 
-# Supplier Summary Header
-s_type = supplier.supplier_type.value if hasattr(supplier.supplier_type, "value") else str(supplier.supplier_type)
+# Supplier Summary Header (Entity Classification REMOVED)
 st.markdown(f"""
 <div class="glass-card" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem;">
     <h3 style="margin: 0; color: white;">{supplier.name}</h3>
-    <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px; margin-bottom: 0;">
-        Entity Classification: <strong>{s_type.title()}</strong>
-    </p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -54,11 +50,11 @@ try:
     if supplier.evidence:
         render_evidence_viewer(supplier.evidence)
     else:
-        st.info("📭 No structured evidence graph recorded for this supplier.")
+        st.info("No structured evidence graph recorded for this supplier.")
 except Exception as e:
     st.warning("Evidence viewer unavailable.")
 
 if supplier.source_urls:
-    st.markdown("### 🌐 Fetched Web Source URLs")
+    st.markdown("### Fetched Web Source URLs")
     for url in supplier.source_urls:
-        st.markdown(f"- 🔗 [{url}]({url})")
+        st.markdown(f"- [{url}]({url})")

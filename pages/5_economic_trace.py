@@ -4,7 +4,7 @@ import streamlit as st
 from x402.fx_engine import FXEngine
 from x402.account import PrepaidUSDAccount
 
-st.set_page_config(page_title="ProcureX — Economic Trace & Quota", page_icon="💰", layout="wide")
+st.set_page_config(page_title="ProcureX — Economic Trace & Quota", layout="wide")
 
 try:
     from app import apply_custom_css, init_session_state
@@ -13,17 +13,17 @@ try:
 except Exception:
     pass
 
-st.markdown("<h1>💰 Economic <span class='gradient-text'>Trace & Quota Tracker</span></h1>", unsafe_allow_html=True)
+st.markdown("<h1>Economic Trace & <span class='gradient-text'>Quota Tracker</span></h1>", unsafe_allow_html=True)
 st.markdown("*Autonomous research budget allocation, live FX conversion, and x402 micropayment quota tracker.*")
 
 fx_engine = FXEngine()
 account = PrepaidUSDAccount()
 current_rate = fx_engine.get_rate()
 
-st.info(f"🌐 **Live FX Exchange Rate:** 1 USD = ₹{current_rate:.2f} INR (Auto-cached hourly via open.er-api.com)")
+st.info(f"Live FX Exchange Rate: 1 USD = ₹{current_rate:.2f} INR (Auto-cached hourly via open.er-api.com)")
 
 # Daily Quota & Balance Overview
-st.markdown("### 📊 Daily API Quota & Account Balance")
+st.markdown("### Daily API Quota & Account Balance")
 
 DAILY_QUOTA_MAX_USD = 0.100  # $0.100 daily limit (~50 micro-queries)
 balance = account.get_balance()
@@ -35,28 +35,28 @@ quota_pct = (total_spent / DAILY_QUOTA_MAX_USD) * 100
 
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.metric("💳 Prepaid USD Balance", fx_engine.format_dual(balance))
+    st.metric("Prepaid USD Balance", fx_engine.format_dual(balance))
 with c2:
-    st.metric("📊 Daily Quota Limit", fx_engine.format_dual(DAILY_QUOTA_MAX_USD))
+    st.metric("Daily Quota Limit", fx_engine.format_dual(DAILY_QUOTA_MAX_USD))
 with c3:
-    st.metric("💸 Quota Used Today", fx_engine.format_dual(total_spent))
+    st.metric("Quota Used Today", fx_engine.format_dual(total_spent))
 with c4:
-    st.metric("🔋 Remaining Quota", fx_engine.format_dual(quota_remaining))
+    st.metric("Remaining Quota", fx_engine.format_dual(quota_remaining))
 
 st.progress(min(total_spent / DAILY_QUOTA_MAX_USD, 1.0), text=f"Daily Micro-Query Quota Exhaustion: {quota_pct:.1f}% used")
 
 if quota_pct >= 80:
-    st.error("🚨 **Quota Exhaustion Alert:** You have used over 80% of your daily API rate limit. Top up or reset to avoid query throttling.")
+    st.error("Quota Exhaustion Alert: You have used over 80% of your daily API rate limit. Top up or reset to avoid query throttling.")
 
 top_col1, top_col2 = st.columns([1, 1])
 with top_col1:
-    if st.button("💳 Top Up Account Balance ($0.050 USD)", type="secondary", use_container_width=True):
+    if st.button("Top Up Account Balance ($0.050 USD)", type="secondary", use_container_width=True):
         new_bal = account.top_up(0.050)
         st.success(f"Successfully topped up balance! New balance: {fx_engine.format_dual(new_bal)}")
         st.rerun()
 
 with top_col2:
-    if st.button("🔄 Reset Daily Quota Tracker", type="secondary", use_container_width=True):
+    if st.button("Reset Daily Quota Tracker", type="secondary", use_container_width=True):
         if session:
             session.budget.total_spent = 0.0
             session.budget.remaining_budget = session.budget.initial_budget
@@ -72,16 +72,14 @@ if session:
     except Exception:
         pass
 
-# Transparency & Protocol Documentation Section
-st.markdown("### 🔍 Protocol Transparency & Architecture Limitations")
+# Product Vision Section (Updated per user request)
+st.markdown("### Protocol Transparency & Product Vision")
 
 st.markdown(f"""
 <div class="glass-card">
-    <h4 style="margin-top:0; color:#38bdf8;">⚡ x402 Micropayment Protocol Specifications</h4>
+    <h4 style="margin-top:0; color:#38bdf8;">x402 Micropayment Protocol Specifications</h4>
     <p style="color:#cbd5e1; font-size:0.9rem; line-height:1.6;">
-        ProcureX implements the <strong>x402 protocol (HTTP 402 Payment Required)</strong> to give autonomous AI agents 
-        financial agency. Before requesting high-value price intelligence ($0.002) or supplier verification ($0.001), 
-        the agent evaluates expected information gain versus cost.
+        ProcureX implements the x402 protocol (HTTP 402 Payment Required) to give autonomous AI agents financial convenience.
     </p>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:12px;">
         <div style="background:rgba(15,23,42,0.6); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
@@ -94,11 +92,9 @@ st.markdown(f"""
             </ul>
         </div>
         <div style="background:rgba(15,23,42,0.6); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
-            <strong style="color:white;">Production Roadmap & Scalability:</strong>
+            <strong style="color:white;">Product Vision:</strong>
             <ul style="color:#94a3b8; font-size:0.85rem; margin:6px 0 0 0; padding-left:18px;">
                 <li>Integration with Stripe / UPI payment rails</li>
-                <li>On-chain cryptographic lightning/layer-2 settlement</li>
-                <li>Multi-currency auto-hedging for bulk procurement</li>
                 <li>Production GSTIN & Udyam API integrations</li>
             </ul>
         </div>
