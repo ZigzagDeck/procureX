@@ -12,7 +12,7 @@ class WebSearchSource(ResearchSource):
         self._client = httpx.AsyncClient(timeout=15.0, headers={'User-Agent': 'Mozilla/5.0 (compatible; ProcureX/1.0)'}, follow_redirects=True)
     async def search(self, query, max_results=10, **kwargs):
         try:
-            from duckduckgo_search import DDGS
+            from ddgs import DDGS
             await self._rate_limiter.wait('duckduckgo.com')
             loop = asyncio.get_event_loop()
             results = await loop.run_in_executor(None, lambda: list(DDGS().text(query, max_results=max_results)))
@@ -28,7 +28,7 @@ class WebSearchSource(ResearchSource):
             return FetchedContent(url=url, content='', status_code=0, source_name=self.name, error=str(e))
     def is_available(self):
         try:
-            from duckduckgo_search import DDGS
+            from ddgs import DDGS
             return True
         except ImportError: return False
     async def close(self): await self._client.aclose()

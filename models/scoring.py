@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from datetime import datetime, timezone
 from .requirement import ProcurementMode
 
 class ScoreDimension(BaseModel):
@@ -23,7 +23,7 @@ class SupplierScore(BaseModel):
     confidence: float = 0.0  # 0.0 to 1.0, separate from score
     confidence_explanation: str = ""
     procurement_mode: ProcurementMode = ProcurementMode.BALANCED
-    scored_at: datetime = Field(default_factory=datetime.utcnow)
+    scored_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ScoringWeights(BaseModel):
     """Weights for the different scoring dimensions."""

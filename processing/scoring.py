@@ -4,7 +4,7 @@ from models.requirement import ProcurementMode
 from processing.price_normalizer import PriceNormalizer
 from processing.product_matcher import ProductMatcher
 from processing.moq_validator import MOQValidator
-from datetime import datetime
+from datetime import datetime, timezone
 
 class ScoringEngine:
     def __init__(self):
@@ -28,7 +28,7 @@ class ScoringEngine:
         dims.append(ScoreDimension(name='Evidence Quality', weight=weights.evidence_quality, raw_score=eq, weighted_score=eq*weights.evidence_quality))
         total = sum(d.weighted_score for d in dims)
         conf = self._calculate_confidence(evidence_graph)
-        return SupplierScore(supplier_id=supplier.id, total_score=total, dimensions=dims, confidence=conf, procurement_mode=requirement.procurement_mode, scored_at=datetime.utcnow())
+        return SupplierScore(supplier_id=supplier.id, total_score=total, dimensions=dims, confidence=conf, procurement_mode=requirement.procurement_mode, scored_at=datetime.now(timezone.utc))
     def _score_product_fit(self, supplier, req):
         if not supplier.products: return 0.3
         best = 0.0

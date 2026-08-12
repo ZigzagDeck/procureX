@@ -1,7 +1,7 @@
 from enum import Enum
 from pydantic import BaseModel, Field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 # Import models (assume these will be defined elsewhere)
@@ -31,14 +31,14 @@ class ResearchPhase(str, Enum):
     FAILED = "failed"
 
 class ResearchLogEntry(BaseModel):
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     phase: ResearchPhase
     message: str
     details: dict = Field(default_factory=dict)
 
 class ResearchSession(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     requirement: Optional[ProcurementRequirement] = None
     phase: ResearchPhase = ResearchPhase.NOT_STARTED
     suppliers: list[Supplier] = Field(default_factory=list)

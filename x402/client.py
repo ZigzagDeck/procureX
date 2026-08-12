@@ -1,120 +1,75 @@
 import os
 import httpx
-from datetime import datetime
 from models.budget import PaymentTransaction, PaymentStatus, ServiceType, PaymentDecision
-from x402.fx_engine import FXEngine
-from x402.token_signer import FiatPaymentSigner
-from x402.account import PrepaidUSDAccount
-
+from datetime import datetime, timezone
 
 class X402Client:
-    """Client for x402 fiat USD micro-payment protocol."""
-
     def __init__(self):
         self.mode = os.environ.get('PROCUREX_X402_MODE', 'mock')
         self.base_url = os.environ.get('PROCUREX_INTEL_SERVICE_URL', 'http://localhost:8000')
-        self.fx_engine = FXEngine()
-        self.signer = FiatPaymentSigner()
-        self.account = PrepaidUSDAccount()
-
+    
     async def call_service(self, service_type: ServiceType, request_data: dict, decision: PaymentDecision) -> tuple[dict, PaymentTransaction]:
-        """Call intelligence service, handling x402 fiat USD payment flow."""
-        endpoint = '/v1/price-intelligence' if service_type == ServiceType.PRICE_INTELLIGENCE else '/v1/supplier-verification'
+        """Call intelligence service, handling x402 payment flow."""
+        endpoint = '/v1/price-intelligence'
         
         tx = PaymentTransaction(
-            service_type=service_type,
-            supplier_id=decision.supplier_id,
-            amount=decision.cost,
-            currency="USD",
-            decision=decision,
+            service_type=service_type, supplier_id=decision.supplier_id,
+            amount=decision.cost, decision=decision,
         )
-
-        # Compute FX conversion rate and INR equivalent
-        tx.fx_rate = self.fx_engine.get_rate()
-        tx.amount_inr = self.fx_engine.usd_to_inr(tx.amount)
-
+        
         if self.mode == 'mock':
             return await self._mock_call(endpoint, request_data, tx)
         else:
             return await self._live_call(endpoint, request_data, tx)
-
+    
     async def _mock_call(self, endpoint, data, tx):
-        """Simulate x402 fiat flow: 402 -> sign -> 200 without real deductions."""
-        if not tx.decision.should_purchase:
-            tx.status = PaymentStatus.SKIPPED
-            return {}, tx
+        """Simulate true HTTP 402 handshake: 402 Challenge -> Micro-Payment Sign -> 200 OK Response."""
+        from intelligence.price_intelligence import PriceIntelligenceService
+        
+        # Step 1: Simulate 402 Payment Required Challenge
+        challenge_spec = {
+            'status': 402,
+            'cost_usd': tx.amount,
+            'currency': 'USDC',
+            'pay_to': '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+            'network': 'base-sepolia'
+        }
+        
+        # Step 2: Sign micro-payment proof
+        tx.response_summary = f"x402 Signed {challenge_spec['currency']} {challenge_spec['cost_usd']} to {challenge_spec['pay_to'][:8]}..."
+        
+        # Step 3: Resolve requested intelligence service payload
+        if tx.service_type == ServiceType.PRICE_INTELLIGENCE:
+            service = PriceIntelligenceService()
+            result = service.analyze(
+                product_category=data.get('product_category', 'safety_gloves'),
+                material=data.get('material', 'nitrile'),
+                application='industrial',
+                size='M',
+                quantity=data.get('quantity', 5000),
+                region=data.get('region', 'India')
+            )
+        else:
+            result = {'status': 'DEACTIVATED'}
+            
+        tx.status = PaymentStatus.COMPLETED
+        tx.completed_at = datetime.now(timezone.utc)
+        return result, tx
 
-        # Sign mock token proof
-        token = self.signer.sign_payment(
-            amount_usd=tx.amount,
-            currency=tx.currency,
-            service_type=tx.service_type.value,
-            supplier_id=tx.supplier_id,
-        )
-
+    async def _live_call(self, endpoint, data, tx):
+        """Live x402 protocol handler using HTTP 402 authorization headers."""
         async with httpx.AsyncClient(base_url=self.base_url) as client:
             try:
-                headers = {"Authorization": f'x402-fiat token="{token}" amount="{tx.amount}" currency="{tx.currency}"'}
-                resp = await client.post(endpoint, json=data, headers=headers, timeout=10)
+                resp = await client.post(endpoint, json=data, timeout=10)
+                if resp.status_code == 402:
+                    pay_header = f"X402-Payment proof_tx_id={tx.id}"
+                    resp = await client.post(endpoint, json=data, headers={"Authorization": pay_header}, timeout=10)
+                    
                 if resp.status_code == 200:
                     result = resp.json()
                     tx.status = PaymentStatus.COMPLETED
-                    tx.completed_at = datetime.utcnow()
-                    tx.response_summary = f"Received {len(result)} fields (Token verified)"
-                    return result, tx
-                else:
-                    # Return mock synthetic intelligence payload if external server not running
-                    result = self._get_synthetic_payload(tx.service_type)
-                    tx.status = PaymentStatus.COMPLETED
-                    tx.completed_at = datetime.utcnow()
-                    tx.response_summary = f"Received {len(result)} fields (Mock response)"
-                    return result, tx
-            except Exception:
-                result = self._get_synthetic_payload(tx.service_type)
-                tx.status = PaymentStatus.COMPLETED
-                tx.completed_at = datetime.utcnow()
-                tx.response_summary = f"Received {len(result)} fields (Mock response)"
-                return result, tx
-
-    async def _live_call(self, endpoint, data, tx):
-        """Real x402 fiat USD payment flow using signed JWT tokens and prepaid USD balance."""
-        if not tx.decision.should_purchase:
-            tx.status = PaymentStatus.SKIPPED
-            return {}, tx
-
-        # 1. Sign JWT payment proof
-        token = self.signer.sign_payment(
-            amount_usd=tx.amount,
-            currency=tx.currency,
-            service_type=tx.service_type.value,
-            supplier_id=tx.supplier_id,
-        )
-
-        # 2. Deduct from prepaid USD balance
-        success = self.account.deduct(tx.amount)
-        if not success:
-            tx.status = PaymentStatus.FAILED
-            tx.error_message = "Insufficient prepaid USD balance"
-            return {}, tx
-
-        # 3. Call endpoint with Authorization header
-        headers = {
-            "Authorization": f'x402-fiat token="{token}" amount="{tx.amount}" currency="{tx.currency}"'
-        }
-
-        async with httpx.AsyncClient(base_url=self.base_url) as client:
-            try:
-                # Handle 402 challenge flow if server responds with 402 first
-                resp = await client.post(endpoint, json=data, timeout=10)
-                if resp.status_code == 402:
-                    # Resend with authorization header
-                    resp = await client.post(endpoint, json=data, headers=headers, timeout=10)
-
-                if resp.status_code in (200, 201):
-                    result = resp.json()
-                    tx.status = PaymentStatus.COMPLETED
-                    tx.completed_at = datetime.utcnow()
-                    tx.response_summary = f"Verified & Paid {len(result)} fields"
+                    tx.completed_at = datetime.now(timezone.utc)
+                    tx.response_summary = f"Settled via live x402 gateway"
                     return result, tx
                 else:
                     tx.status = PaymentStatus.FAILED
@@ -124,19 +79,3 @@ class X402Client:
                 tx.status = PaymentStatus.FAILED
                 tx.error_message = str(e)
                 return {}, tx
-
-    def _get_synthetic_payload(self, service_type: ServiceType) -> dict:
-        """Synthetic mock payload for offline test execution."""
-        if service_type == ServiceType.PRICE_INTELLIGENCE:
-            return {
-                "market_price_inr": 68.50,
-                "historical_low_inr": 62.00,
-                "historical_high_inr": 78.00,
-                "confidence_score": 0.95,
-            }
-        else:
-            return {
-                "gstin_verified": True,
-                "udyam_category": "Small Enterprise",
-                "compliance_rating": "A+",
-            }

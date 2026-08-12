@@ -2,7 +2,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 class PaymentStatus(str, Enum):
@@ -28,7 +28,7 @@ class PaymentDecision(BaseModel):
     reason: str
     expected_value: str = ""  # Why it's valuable
     cost: float
-    decided_at: datetime = Field(default_factory=datetime.utcnow)
+    decided_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PaymentTransaction(BaseModel):
     """A payment transaction for a service."""
@@ -44,7 +44,7 @@ class PaymentTransaction(BaseModel):
     status: PaymentStatus = PaymentStatus.PENDING
     decision: PaymentDecision
     response_summary: str = ""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     error_message: str = ""
 

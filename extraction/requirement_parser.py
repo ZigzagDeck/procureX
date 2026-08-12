@@ -2,7 +2,7 @@
 import re
 import json
 import os
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import Optional
 from models.requirement import ProcurementRequirement, ProcurementMode
 
@@ -45,8 +45,13 @@ def _parse_with_llm(query: str, api_key: str) -> Optional[dict]:
 
 def _parse_with_rules(query: str) -> dict:
     q = query.lower()
+    cat_fallback = 'general_supplies'
+    words = [w for w in q.split() if w not in ['find', 'need', 'require', 'order', 'buy', 'purchase', 'get', 'under', 'for', 'in', 'with']]
+    if words:
+        cat_fallback = '_'.join(words[:2])
+
     data = {
-        'product_category': 'safety_gloves', 'material': '', 'application': 'industrial_safety',
+        'product_category': cat_fallback, 'material': '', 'application': 'industrial_safety',
         'size': None, 'quantity': 0, 'maximum_unit_price': None, 'currency': 'INR',
         'destination': '', 'delivery_days': None, 'preferred_supplier_type': None,
         'certification_requirements': [], 'procurement_mode': 'balanced',
@@ -72,8 +77,8 @@ def _parse_with_rules(query: str) -> dict:
         if match:
             data['quantity'] = int(match.group(1).replace(',', ''))
             break
-    for pattern in [r'(?:under|below|max|maximum|budget|upto|up\s*to|within|less\s*than)\s*[\u20b9rs\.inr\s]*(\d+(?:\.\d+)?)',
-                    r'[\u20b9rs\.inr\s]*(\d+(?:\.\d+)?)\s*(?:per\s*piece|/\s*piece|/\s*pc|per\s*unit|each)']:
+    for pattern in [r'(?:under|below|max|maximum|budget|upto|up\s*to|within|less\s*than)\s*[₹rs\.inr\s]*(\d+(?:\.\d+)?)',
+                    r'[₹rs\.inr\s]*(\d+(?:\.\d+)?)\s*(?:per\s*piece|/\s*piece|/\s*pc|per\s*unit|each)']:
         match = re.search(pattern, q)
         if match:
             data['maximum_unit_price'] = float(match.group(1))
@@ -119,5 +124,5 @@ def _validate_requirement(data: dict, raw_query: str) -> ProcurementRequirement:
         destination=data.get('destination', ''), delivery_deadline=delivery_deadline,
         preferred_supplier_type=data.get('preferred_supplier_type'),
         certification_requirements=data.get('certification_requirements', []),
-        procurement_mode=mode, raw_query=raw_query, parsed_at=datetime.utcnow(),
+        procurement_mode=mode, raw_query=raw_query, parsed_at=datetime.now(timezone.utc),
     )

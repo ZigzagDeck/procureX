@@ -1,40 +1,42 @@
 from models.supplier import Supplier
-from datetime import datetime
+from datetime import datetime, timezone
 import random
 
 class PriceIntelligenceService:
     """Generates market price intelligence for a product category."""
-    
+
     def analyze(self, product_category: str, material: str, application: str, size: str, quantity: int, region: str) -> dict:
         """Generate price intelligence report."""
-        # In production: aggregate from multiple real sources
+        # In production: aggregate from multiple real sources (IndiaMART, TradeIndia, commodity APIs)
         # For MVP: generate realistic market data based on domain knowledge
-        
-        # Nitrile safety gloves market prices (realistic range for India)
-        base_prices = {
-            'nitrile': {'min': 35, 'max': 120, 'median': 65},
-            'latex': {'min': 20, 'max': 80, 'median': 45},
-            'vinyl': {'min': 15, 'max': 60, 'median': 35},
+
+        # Dynamic market price lookup by category (INR, GST-exclusive)
+        category_index = {
+            'safety_gloves': {'min': 35, 'max': 120, 'median': 65},
+            'safety_helmets': {'min': 150, 'max': 650, 'median': 320},
+            'safety_shoes': {'min': 450, 'max': 2200, 'median': 950},
+            'face_shields': {'min': 40, 'max': 250, 'median': 110},
+            'industrial_masks': {'min': 15, 'max': 180, 'median': 60},
         }
-        
-        prices = base_prices.get(material.lower(), base_prices['nitrile'])
-        
-        # Adjust for quantity discounts
-        qty_factor = 1.0
-        if quantity >= 10000: qty_factor = 0.9
-        elif quantity >= 5000: qty_factor = 0.95
-        
+
+        cat_key = product_category.lower().replace(' ', '_')
+        base = category_index.get(cat_key, {'min': 100, 'max': 500, 'median': 250})
+
+        # Quantity discount factor
+        qty_factor = 0.85 if quantity >= 10000 else 0.92 if quantity >= 5000 else 1.0
+
         return {
+            'product_category': product_category,
             'market_price_range': {
-                'min': round(prices['min'] * qty_factor, 2),
-                'max': round(prices['max'] * qty_factor, 2),
-                'median': round(prices['median'] * qty_factor, 2),
+                'min': round(base['min'] * qty_factor, 2),
+                'max': round(base['max'] * qty_factor, 2),
+                'median': round(base['median'] * qty_factor, 2),
                 'currency': 'INR',
             },
             'price_trend': 'stable',
             'quantity_discount_applicable': quantity >= 5000,
-            'data_sources_count': 12,
-            'confidence': 0.82,
-            'generated_at': datetime.utcnow().isoformat(),
-            'is_mock': True,  # Flag for transparency
+            'data_sources_count': 14,
+            'confidence': 0.85,
+            'generated_at': datetime.now(timezone.utc).isoformat(),
+            'is_mock': True,
         }

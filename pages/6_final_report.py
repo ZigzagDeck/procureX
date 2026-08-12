@@ -129,7 +129,7 @@ else:
 
 st.markdown("---")
 report_text = f"""# ProcureX Procurement Report
-Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
 
 ## Requirement
 {requirement.raw_query if requirement else 'N/A'}
@@ -162,6 +162,6 @@ This report is based on automated research and should be independently verified.
 st.download_button(
     label="📥 Download Report (Markdown)",
     data=report_text,
-    file_name=f"procurex_report_{datetime.utcnow().strftime('%Y%m%d_%H%M')}.md",
+    file_name=f"procurex_report_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.md",
     mime="text/markdown",
 )

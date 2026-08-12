@@ -1,7 +1,7 @@
 """ResearchSource abstract interface for pluggable data sources."""
 from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 
 class SearchResult(BaseModel):
     title: str = ''
@@ -9,13 +9,13 @@ class SearchResult(BaseModel):
     snippet: str = ''
     source_name: str = ''
     metadata: dict = Field(default_factory=dict)
-    retrieved_at: datetime = Field(default_factory=datetime.utcnow)
+    retrieved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class FetchedContent(BaseModel):
     url: str
     content: str = ''
     status_code: int = 200
-    retrieved_at: datetime = Field(default_factory=datetime.utcnow)
+    retrieved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source_name: str = ''
     error: str = ''
 

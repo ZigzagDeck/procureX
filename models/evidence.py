@@ -2,7 +2,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 from typing import Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 class EvidenceStatus(str, Enum):
     """Status of the evidence."""
@@ -34,7 +34,7 @@ class Contradiction(BaseModel):
     values: list[Any]  # conflicting values
     sources: list[str]  # which sources disagree
     description: str
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class EvidenceGraph(BaseModel):
     """Collection of evidence for a supplier."""
