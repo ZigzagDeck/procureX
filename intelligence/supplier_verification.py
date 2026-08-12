@@ -1,19 +1,11 @@
-from datetime import datetime
+"""Extensible stub for supplier verification service."""
 
 class SupplierVerificationService:
-    def verify(self, supplier_name: str, gstin: str, address: str, claimed_type: str) -> dict:
-        # Mock enhanced verification
-        # In production: cross-reference multiple government and commercial databases
+    """Extensible stub for supplier verification service (deactivated for presentation build)."""
+    def verify(self, supplier_name, gstin='', address='', claimed_type='unknown') -> dict:
         return {
-            'gstin_status': 'ACTIVE' if gstin else 'NOT_PROVIDED',
-            'registered_name': supplier_name.upper() if supplier_name else 'UNKNOWN',
-            'business_type': 'Private Limited Company',
-            'registration_date': '2019-07-01',
-            'principal_place': address or 'Unknown',
-            'msme_registered': True,
-            'msme_category': 'Small',
-            'type_corroboration': claimed_type.lower() if claimed_type else 'unknown',
-            'verification_confidence': 0.75,
-            'verified_at': datetime.utcnow().isoformat(),
+            'status': 'DEACTIVATED',
+            'supplier_name': supplier_name,
+            'message': 'Supplier verification service is deactivated in current release.',
             'is_mock': True,
         }

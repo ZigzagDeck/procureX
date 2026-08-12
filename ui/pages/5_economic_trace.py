@@ -4,25 +4,14 @@ import streamlit as st
 
 st.set_page_config(page_title="ProcureX — Economic Trace", page_icon="💰", layout="wide")
 
-# --- CSS ---
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-.stApp { background-color: #0a0e27; }
-.glass-card {
-    background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
-    padding: 24px; margin-bottom: 24px;
-}
-.gradient-text {
-    background: linear-gradient(90deg, #3b82f6, #06b6d4);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-</style>
-""", unsafe_allow_html=True)
+try:
+    from app import apply_custom_css, init_session_state
+    apply_custom_css()
+    init_session_state()
+except Exception:
+    pass
 
-st.markdown("# 💰 Economic Trace")
+st.markdown("<h1>💰 Economic <span class='gradient-text'>Trace</span></h1>", unsafe_allow_html=True)
 st.markdown("*Research budget allocation and x402 payment decisions*")
 
 session = st.session_state.get("research_session")
@@ -39,11 +28,10 @@ if not session:
 
 budget = session.budget
 
-# Budget overview
 try:
     from ui.components.budget_tracker import render_budget_tracker
     render_budget_tracker(budget)
-except ImportError:
+except Exception:
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("💵 Initial Budget", f"${budget.initial_budget:.3f}")
@@ -53,8 +41,6 @@ except ImportError:
         st.metric("💰 Remaining", f"${budget.remaining_budget:.3f}")
 
 st.markdown("---")
-
-# x402 Protocol Info
 st.markdown("### 🔐 x402 Payment Protocol")
 st.markdown("""
 <div class="glass-card">
@@ -64,12 +50,11 @@ st.markdown("""
     information exceeds the cost before committing research budget.
     </p>
     <p style="color:#64748b; font-size:0.85rem;">
-    Services: <strong>Price Intelligence</strong> ($0.002) · <strong>Supplier Verification</strong> ($0.001)
+    Active Service: <strong>Price Intelligence</strong> ($0.002)
     </p>
 </div>
 """, unsafe_allow_html=True)
 
-# Decision Log
 if budget.decisions:
     st.markdown("### 🧠 Autonomous Payment Decisions")
     for i, decision in enumerate(budget.decisions):
@@ -90,7 +75,6 @@ if budget.decisions:
 else:
     st.info("No payment decisions made yet. The agent will consider purchasing intelligence services during research.")
 
-# Transaction History
 if budget.transactions:
     st.markdown("### 💳 Transaction History")
     for tx in budget.transactions:

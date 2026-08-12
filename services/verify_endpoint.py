@@ -1,2 +1,2 @@
-# Re-exporting supplier verification logic for endpoint usage if needed
+"""Extensible stub for verification endpoint."""
 from intelligence.supplier_verification import SupplierVerificationService

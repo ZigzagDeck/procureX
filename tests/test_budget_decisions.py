@@ -29,13 +29,13 @@ def test_skip_insufficient_budget():
     decision = mgr.should_purchase_price_intel(supplier, score, price_uncertainty=0.5)
     assert decision.should_purchase == False
 
-def test_verification_purchase():
+def test_verification_deactivated_stub():
     budget = ResearchBudget(initial_budget=0.020, remaining_budget=0.020)
     mgr = BudgetManager(budget)
     supplier = Supplier(name='Test Corp')
     score = SupplierScore(supplier_id=supplier.id, total_score=60)
     decision = mgr.should_purchase_verification(supplier, score, verification_score=0.3)
-    assert decision.should_purchase == True
+    assert decision.should_purchase == False
 
 def test_decisions_tracked():
     budget = ResearchBudget(initial_budget=0.020, remaining_budget=0.020)
@@ -43,5 +43,4 @@ def test_decisions_tracked():
     supplier = Supplier(name='Test Corp')
     score = SupplierScore(supplier_id=supplier.id, total_score=70)
     mgr.should_purchase_price_intel(supplier, score, 0.5)
-    mgr.should_purchase_verification(supplier, score, 0.3)
-    assert len(budget.decisions) == 2
+    assert len(budget.decisions) == 1

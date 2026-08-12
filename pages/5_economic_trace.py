@@ -50,7 +50,7 @@ st.markdown("""
     information exceeds the cost before committing research budget.
     </p>
     <p style="color:#64748b; font-size:0.85rem;">
-    Services: <strong>Price Intelligence</strong> ($0.002) · <strong>Supplier Verification</strong> ($0.001)
+    Active Service: <strong>Price Intelligence</strong> ($0.002)
     </p>
 </div>
 """, unsafe_allow_html=True)

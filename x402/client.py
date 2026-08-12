@@ -10,7 +10,7 @@ class X402Client:
     
     async def call_service(self, service_type: ServiceType, request_data: dict, decision: PaymentDecision) -> tuple[dict, PaymentTransaction]:
         """Call intelligence service, handling x402 payment flow."""
-        endpoint = '/v1/price-intelligence' if service_type == ServiceType.PRICE_INTELLIGENCE else '/v1/supplier-verification'
+        endpoint = '/v1/price-intelligence'
         
         tx = PaymentTransaction(
             service_type=service_type, supplier_id=decision.supplier_id,
@@ -25,7 +25,6 @@ class X402Client:
     async def _mock_call(self, endpoint, data, tx):
         """Simulate true HTTP 402 handshake: 402 Challenge -> Micro-Payment Sign -> 200 OK Response."""
         from intelligence.price_intelligence import PriceIntelligenceService
-        from intelligence.supplier_verification import SupplierVerificationService
         
         # Step 1: Simulate 402 Payment Required Challenge
         challenge_spec = {
@@ -51,13 +50,7 @@ class X402Client:
                 region=data.get('region', 'India')
             )
         else:
-            service = SupplierVerificationService()
-            result = service.verify(
-                supplier_name=data.get('supplier_name', ''),
-                gstin=data.get('gstin', ''),
-                address=data.get('address', ''),
-                claimed_type='manufacturer'
-            )
+            result = {'status': 'DEACTIVATED'}
             
         tx.status = PaymentStatus.COMPLETED
         tx.completed_at = datetime.utcnow()
@@ -67,15 +60,9 @@ class X402Client:
         """Live x402 protocol handler using HTTP 402 authorization headers."""
         async with httpx.AsyncClient(base_url=self.base_url) as client:
             try:
-                # Step 1: Initial Unauthenticated Request
                 resp = await client.post(endpoint, json=data, timeout=10)
-                
-                # Step 2: Handle 402 Payment Required Challenge
                 if resp.status_code == 402:
-                    challenge_header = resp.headers.get("WWW-Authenticate", "")
                     pay_header = f"X402-Payment proof_tx_id={tx.id}"
-                    
-                    # Step 3: Re-issue request with payment proof
                     resp = await client.post(endpoint, json=data, headers={"Authorization": pay_header}, timeout=10)
                     
                 if resp.status_code == 200:

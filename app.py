@@ -188,7 +188,7 @@ def main():
         st.markdown("""
         <div class="glass-card">
             <h3 style="text-align: center;">✅ Verification</h3>
-            <p style="color: #94a3b8; text-align: center;">Cross-referencing claims against GSTIN, Udyam MSME, and flagging price discrepancies.</p>
+            <p style="color: #94a3b8; text-align: center;">Cross-referencing claims against GSTIN records, evidence graphs, and flagging price discrepancies.</p>
         </div>
         """, unsafe_allow_html=True)
         
