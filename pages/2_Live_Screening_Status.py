@@ -60,16 +60,12 @@ with log_container:
         st.info("Log empty.")
 
 st.markdown("<br>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
     if st.button("View Discovered Suppliers", use_container_width=True):
         st.switch_page("pages/3_Discovered_Suppliers.py")
 
 with col2:
-    if st.button("Browse Evidence Verification", use_container_width=True):
+    if st.button("Browse Evidence Verification", type="primary", use_container_width=True):
         st.switch_page("pages/4_Evidence_Browser.py")
-
-with col3:
-    if st.button("Generate Recommendation Report", type="primary", use_container_width=True):
-        st.switch_page("pages/6_Final_Report.py")

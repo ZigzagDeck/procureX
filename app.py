@@ -131,7 +131,6 @@ def render_common_sidebar():
         ("Discovered Suppliers", "pages/3_Discovered_Suppliers.py"),
         ("Evidence Browser", "pages/4_Evidence_Browser.py"),
         ("Economic Trace & Quota Tracker", "pages/5_Economic_Trace.py"),
-        ("Final Recommendation Report", "pages/6_Final_Report.py"),
     ]
     
     for title, path in pages:
@@ -216,8 +215,8 @@ def main():
         
     st.markdown("<h2 style='text-align: center; margin: 2.5rem 0 1.5rem 0;'>How To Use <span class='gradient-text'>ProcureX</span></h2>", unsafe_allow_html=True)
     
-    # 4-Step Interactive Workflow Guide
-    s1, s2, s3, s4 = st.columns(4)
+    # 3-Step Interactive Workflow Guide
+    s1, s2, s3 = st.columns(3)
     
     with s1:
         st.markdown("""
@@ -243,15 +242,6 @@ def main():
             <div class="step-badge">Step 3</div>
             <h4>Supplier Evaluation</h4>
             <p style="color: #94a3b8; font-size: 0.85rem;">Review discovered suppliers, inspect direct website links, and check unit price and MOQ information.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with s4:
-        st.markdown("""
-        <div class="glass-card" style="text-align: center;">
-            <div class="step-badge">Step 4</div>
-            <h4>Recommendation Report</h4>
-            <p style="color: #94a3b8; font-size: 0.85rem;">Export the executive procurement report featuring top-ranked suppliers in PDF or Markdown format.</p>
         </div>
         """, unsafe_allow_html=True)
 
