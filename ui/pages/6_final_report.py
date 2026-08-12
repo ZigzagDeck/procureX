@@ -1,7 +1,7 @@
 """Final Report — Evidence-backed procurement recommendation with full transparency."""
 
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timezone
 
 st.set_page_config(page_title="ProcureX — Final Report", page_icon="📋", layout="wide")
 

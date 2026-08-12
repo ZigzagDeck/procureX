@@ -1,10 +1,10 @@
-"""Economic Trace — Research budget allocation and x402 payment decisions."""
+"""Economic Trace — Quota Expense Tracker & x402 Micropayment Protocol."""
 
 import streamlit as st
 from x402.fx_engine import FXEngine
 from x402.account import PrepaidUSDAccount
 
-st.set_page_config(page_title="ProcureX — Economic Trace", page_icon="💰", layout="wide")
+st.set_page_config(page_title="ProcureX — Economic Trace & Quota", page_icon="💰", layout="wide")
 
 try:
     from app import apply_custom_css, init_session_state
@@ -13,102 +13,95 @@ try:
 except Exception:
     pass
 
-st.markdown("<h1>💰 Economic <span class='gradient-text'>Trace</span></h1>", unsafe_allow_html=True)
-st.markdown("*Research budget allocation and x402 payment decisions*")
+st.markdown("<h1>💰 Economic <span class='gradient-text'>Trace & Quota Tracker</span></h1>", unsafe_allow_html=True)
+st.markdown("*Autonomous research budget allocation, live FX conversion, and x402 micropayment quota tracker.*")
 
 fx_engine = FXEngine()
 account = PrepaidUSDAccount()
 current_rate = fx_engine.get_rate()
 
-st.info(f"ℹ️ **Live FX Exchange Rate:** 1 USD = ₹{current_rate:.2f} INR (auto-cached 1h)")
+st.info(f"🌐 **Live FX Exchange Rate:** 1 USD = ₹{current_rate:.2f} INR (Auto-cached hourly via open.er-api.com)")
 
+# Daily Quota & Balance Overview
+st.markdown("### 📊 Daily API Quota & Account Balance")
+
+DAILY_QUOTA_MAX_USD = 0.100  # $0.100 daily limit (~50 micro-queries)
+balance = account.get_balance()
 session = st.session_state.get("research_session")
 
-if not session:
-    col_bal, col_fx = st.columns(2)
-    with col_bal:
-        st.metric("💳 Account Balance", f"{fx_engine.format_dual(account.get_balance())}")
-    with col_fx:
-        st.metric("📈 Current FX Rate", f"₹{current_rate:.2f} / USD")
+total_spent = session.budget.total_spent if session else 0.0
+quota_remaining = max(0.0, DAILY_QUOTA_MAX_USD - total_spent)
+quota_pct = (total_spent / DAILY_QUOTA_MAX_USD) * 100
 
-    st.markdown("""
-    <div class="glass-card" style="text-align:center; padding:3rem; margin-top:1rem;">
-        <h3>📭 No Research Session Active</h3>
-        <p style="color:#94a3b8;">Start a research session to track budget and payment decisions.</p>
-        <p style="color:#64748b;">Navigate to <strong>Research</strong> to begin.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.metric("💳 Prepaid USD Balance", fx_engine.format_dual(balance))
+with c2:
+    st.metric("📊 Daily Quota Limit", fx_engine.format_dual(DAILY_QUOTA_MAX_USD))
+with c3:
+    st.metric("💸 Quota Used Today", fx_engine.format_dual(total_spent))
+with c4:
+    st.metric("🔋 Remaining Quota", fx_engine.format_dual(quota_remaining))
 
-budget = session.budget
+st.progress(min(total_spent / DAILY_QUOTA_MAX_USD, 1.0), text=f"Daily Micro-Query Quota Exhaustion: {quota_pct:.1f}% used")
 
-try:
-    from ui.components.budget_tracker import render_budget_tracker
-    render_budget_tracker(budget)
-except Exception:
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("💵 Initial Budget", fx_engine.format_dual(budget.initial_budget))
-    with col2:
-        st.metric("💸 Spent", fx_engine.format_dual(budget.total_spent))
-    with col3:
-        st.metric("💰 Remaining", fx_engine.format_dual(budget.remaining_budget))
-    with col4:
-        st.metric("💳 Account Balance", fx_engine.format_dual(account.get_balance()))
+if quota_pct >= 80:
+    st.error("🚨 **Quota Exhaustion Alert:** You have used over 80% of your daily API rate limit. Top up or reset to avoid query throttling.")
+
+top_col1, top_col2 = st.columns([1, 1])
+with top_col1:
+    if st.button("💳 Top Up Account Balance ($0.050 USD)", type="secondary", use_container_width=True):
+        new_bal = account.top_up(0.050)
+        st.success(f"Successfully topped up balance! New balance: {fx_engine.format_dual(new_bal)}")
+        st.rerun()
+
+with top_col2:
+    if st.button("🔄 Reset Daily Quota Tracker", type="secondary", use_container_width=True):
+        if session:
+            session.budget.total_spent = 0.0
+            session.budget.remaining_budget = session.budget.initial_budget
+        st.success("Daily quota tracker reset successfully!")
+        st.rerun()
 
 st.markdown("---")
-st.markdown("### 🔐 x402 Payment Protocol")
+
+if session:
+    try:
+        from ui.components.budget_tracker import render_budget_tracker
+        render_budget_tracker(session.budget)
+    except Exception:
+        pass
+
+# Transparency & Protocol Documentation Section
+st.markdown("### 🔍 Protocol Transparency & Architecture Limitations")
+
 st.markdown(f"""
 <div class="glass-card">
-    <p style="color:#94a3b8;">
-    ProcureX uses the <strong>x402 protocol</strong> (HTTP 402 Payment Required) to autonomously 
-    pay for specialized intelligence services in fiat USD. The agent evaluates whether the expected value of 
-    information exceeds the cost before committing research budget.
+    <h4 style="margin-top:0; color:#38bdf8;">⚡ x402 Micropayment Protocol Specifications</h4>
+    <p style="color:#cbd5e1; font-size:0.9rem; line-height:1.6;">
+        ProcureX implements the <strong>x402 protocol (HTTP 402 Payment Required)</strong> to give autonomous AI agents 
+        financial agency. Before requesting high-value price intelligence ($0.002) or supplier verification ($0.001), 
+        the agent evaluates expected information gain versus cost.
     </p>
-    <p style="color:#64748b; font-size:0.85rem;">
-    Services: <strong>Price Intelligence</strong> ({fx_engine.format_dual(0.002)}) · <strong>Supplier Verification</strong> ({fx_engine.format_dual(0.001)})
-    </p>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:12px;">
+        <div style="background:rgba(15,23,42,0.6); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+            <strong style="color:white;">Current Architecture State:</strong>
+            <ul style="color:#94a3b8; font-size:0.85rem; margin:6px 0 0 0; padding-left:18px;">
+                <li>Live FX Engine with 1h rate caching & fallback</li>
+                <li>Thread-safe local JSON ledger balance management</li>
+                <li>HMAC-SHA256 JWT payment proof signing</li>
+                <li>Rule-based information value decision engine</li>
+            </ul>
+        </div>
+        <div style="background:rgba(15,23,42,0.6); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+            <strong style="color:white;">Production Roadmap & Scalability:</strong>
+            <ul style="color:#94a3b8; font-size:0.85rem; margin:6px 0 0 0; padding-left:18px;">
+                <li>Integration with Stripe / UPI payment rails</li>
+                <li>On-chain cryptographic lightning/layer-2 settlement</li>
+                <li>Multi-currency auto-hedging for bulk procurement</li>
+                <li>Production GSTIN & Udyam API integrations</li>
+            </ul>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
-
-if budget.decisions:
-    st.markdown("### 🧠 Autonomous Payment Decisions")
-    for i, decision in enumerate(budget.decisions):
-        icon = "✅" if decision.should_purchase else "⏭️"
-        service = decision.service_type.value.replace("_", " ").title()
-        action = "Purchased" if decision.should_purchase else "Skipped"
-        dual_cost = fx_engine.format_dual(decision.cost)
-
-        st.markdown(
-            f"""<div class="glass-card" style="padding:1rem;">
-            <strong>{icon} Decision #{i+1}</strong> — {service}<br>
-            <span style="color:#94a3b8;">Supplier:</span> {decision.supplier_name or decision.supplier_id}<br>
-            <span style="color:#94a3b8;">Action:</span> {action} ({dual_cost})<br>
-            <span style="color:#94a3b8;">Reason:</span> {decision.reason}<br>
-            {f'<span style="color:#94a3b8;">Expected Value:</span> {decision.expected_value}' if decision.expected_value else ''}
-            </div>""",
-            unsafe_allow_html=True,
-        )
-else:
-    st.info("No payment decisions made yet. The agent will consider purchasing intelligence services during research.")
-
-if budget.transactions:
-    st.markdown("### 💳 Transaction History")
-    for tx in budget.transactions:
-        status = tx.status.value if hasattr(tx.status, "value") else str(tx.status)
-        status_icon = "✅" if status == "completed" else "❌" if status == "failed" else "⏳"
-        service = tx.service_type.value.replace("_", " ").title()
-        dual_tx_amount = fx_engine.format_dual(tx.amount)
-        rate_used = tx.fx_rate if tx.fx_rate > 0 else current_rate
-
-        st.markdown(
-            f"""<div class="glass-card" style="padding:1rem; border-left: 3px solid {'#22c55e' if status == 'completed' else '#ef4444' if status == 'failed' else '#eab308'};">
-            {status_icon} <strong>{service}</strong> — {dual_tx_amount}<br>
-            <span style="color:#94a3b8;">Status:</span> {status.title()} &bull; 
-            <span style="color:#94a3b8;">FX Rate Used:</span> 1 USD = ₹{rate_used:.2f} INR<br>
-            <span style="color:#94a3b8;">Created:</span> {tx.created_at.strftime('%Y-%m-%d %H:%M:%S') if tx.created_at else 'N/A'}
-            {f'<br><span style="color:#94a3b8;">Response:</span> {tx.response_summary}' if tx.response_summary else ''}
-            {f'<br><span style="color:#ef4444;">Error:</span> {tx.error_message}' if tx.error_message else ''}
-            </div>""",
-            unsafe_allow_html=True,
-        )

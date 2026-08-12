@@ -1,64 +1,52 @@
-"""Reusable component to display evidence records with status badges."""
+"""Clean evidence viewer component focusing on fetched web sources."""
 
 import streamlit as st
+from urllib.parse import urlparse
 
 
 STATUS_BADGES = {
-    "verified": ("🟢", "Verified", "#22c55e"),
-    "corroborated": ("🔵", "Corroborated", "#3b82f6"),
-    "documented": ("🟦", "Documented", "#06b6d4"),
-    "claimed": ("🟡", "Claimed", "#eab308"),
-    "conflicting": ("🔴", "Conflicting", "#ef4444"),
-    "unknown": ("⚪", "Unknown", "#6b7280"),
+    "verified": ("🟢", "Verified Source", "#22c55e"),
+    "corroborated": ("🔵", "Corroborated Web Data", "#3b82f6"),
+    "documented": ("🟦", "Extracted Catalog", "#06b6d4"),
+    "claimed": ("🟡", "Web Search Claim", "#eab308"),
+    "conflicting": ("🔴", "Conflicting Data", "#ef4444"),
+    "unknown": ("⚪", "Unverified", "#6b7280"),
 }
 
 
-def get_status_badge(status_value: str) -> str:
-    """Return emoji + label for an evidence status."""
-    icon, label, _ = STATUS_BADGES.get(status_value, ("⚪", "Unknown", "#6b7280"))
-    return f"{icon} {label}"
-
-
-def get_status_color(status_value: str) -> str:
-    """Return color hex for an evidence status."""
-    _, _, color = STATUS_BADGES.get(status_value, ("⚪", "Unknown", "#6b7280"))
-    return color
-
-
 def render_evidence_viewer(evidence_graph) -> None:
-    """Render evidence graph for a supplier with status badges and contradiction alerts."""
-    if not evidence_graph:
-        st.info("📭 No evidence collected for this supplier.")
+    """Render evidence graph focusing on fetched websites and claims."""
+    if not evidence_graph or not evidence_graph.claims:
+        st.info("📭 No web evidence records collected.")
         return
 
-    # Claims grouped by field
-    if evidence_graph.claims:
-        for field_name, records in evidence_graph.claims.items():
-            with st.expander(f"📋 {field_name.replace('_', ' ').title()} ({len(records)} source{'s' if len(records) != 1 else ''})"):
-                for record in records:
-                    status_str = record.evidence_status.value if hasattr(record.evidence_status, "value") else str(record.evidence_status)
-                    badge = get_status_badge(status_str)
-                    color = get_status_color(status_str)
+    for field_name, records in evidence_graph.claims.items():
+        field_title = field_name.replace("_", " ").title()
+        st.markdown(f"#### 🌐 {field_title} Provenance")
 
-                    st.markdown(
-                        f"""<div style="background:rgba(19,24,54,0.6); border-left:3px solid {color};
-                        padding:0.7rem 1rem; margin:0.3rem 0; border-radius:0 8px 8px 0;">
-                        <strong>{badge}</strong> &mdash; <code>{record.value}</code><br>
-                        <small>Source: {record.source} &bull; Confidence: {record.confidence:.0%}
-                        {f' &bull; <a href="{record.url}" target="_blank">🔗 Link</a>' if record.url else ''}
-                        {f' &bull; Retrieved: {record.retrieved_at.strftime("%Y-%m-%d %H:%M")}' if record.retrieved_at else ''}</small>
-                        </div>""",
-                        unsafe_allow_html=True,
-                    )
-    else:
-        st.info("No evidence claims recorded.")
+        for record in records:
+            status_str = record.evidence_status.value if hasattr(record.evidence_status, "value") else str(record.evidence_status)
+            icon, label, color = STATUS_BADGES.get(status_str, ("⚪", "Unverified", "#6b7280"))
+            domain = urlparse(record.url).netloc if record.url else record.source
 
-    # Contradictions
-    if evidence_graph.contradictions:
-        st.markdown("### ⚠️ Contradictions Detected")
-        for contradiction in evidence_graph.contradictions:
-            st.warning(
-                f"**{contradiction.field_name.replace('_', ' ').title()}**: {contradiction.description}\n\n"
-                f"Conflicting values: {', '.join(str(v) for v in contradiction.values)}\n\n"
-                f"Sources: {', '.join(contradiction.sources)}"
+            st.markdown(
+                f"""<div class="glass-card" style="padding: 1rem; margin-bottom: 0.8rem; border-left: 3px solid {color};">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:700; color:{color};">{icon} {label}</span>
+                    <span style="color:#94a3b8; font-size:0.8rem;">Confidence: {record.confidence:.0%}</span>
+                </div>
+                <div style="margin: 6px 0;">
+                    <strong style="color:white;">Value:</strong> <code style="background:rgba(56,189,248,0.1); color:#38bdf8; padding:2px 8px; border-radius:4px;">{record.value}</code>
+                </div>
+                {f'<div style="color:#cbd5e1; font-size:0.85rem; font-style:italic; margin:4px 0;">"{record.raw_snippet}"</div>' if record.raw_snippet else ''}
+                <div style="font-size:0.8rem; color:#64748b; margin-top:4px;">
+                    Source: {domain} {f' &bull; <a href="{record.url}" target="_blank" style="color:#38bdf8;">Open Source Link 🔗</a>' if record.url else ''}
+                </div>
+                </div>""",
+                unsafe_allow_html=True,
             )
+
+    if evidence_graph.contradictions:
+        st.markdown("#### ⚠️ Contradiction Signals")
+        for c in evidence_graph.contradictions:
+            st.warning(f"**{c.field_name.replace('_', ' ').title()}**: {c.description} (Sources: {', '.join(c.sources)})")

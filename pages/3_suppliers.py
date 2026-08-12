@@ -1,4 +1,4 @@
-"""Discovered Suppliers Page."""
+"""Discovered Suppliers Page — Clean, elegant B2B supplier candidate list."""
 
 import streamlit as st
 import pandas as pd
@@ -13,7 +13,7 @@ except Exception:
     pass
 
 st.markdown("<h1>🏭 Discovered <span class='gradient-text'>Suppliers</span></h1>", unsafe_allow_html=True)
-st.markdown("*Autonomous discovery, deduplication, and multidimensional capability scoring.*")
+st.markdown("*Autonomous discovery, entity deduplication, and multidimensional capability scoring.*")
 
 session = st.session_state.get("research_session")
 
@@ -22,7 +22,7 @@ if not session or not session.suppliers:
     <div class="glass-card" style="text-align:center; padding:3rem;">
         <h3>📭 No Suppliers Discovered Yet</h3>
         <p style="color:#94a3b8;">Start a research session to discover, verify, and score suppliers.</p>
-        <p style="color:#64748b;">Navigate to <strong>1_research</strong> to begin.</p>
+        <p style="color:#64748b;">Navigate to <strong>1. Requirement Input</strong> to begin.</p>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
@@ -39,12 +39,12 @@ try:
     from ui.components.supplier_card import render_supplier_card
     for rank, (supplier, score) in enumerate(ranked_pairs, start=1):
         render_supplier_card(supplier, score=score, rank=rank)
-except Exception:
+except Exception as e:
     for rank, (supplier, score) in enumerate(ranked_pairs, start=1):
         st.markdown(f"#### #{rank} {supplier.name} — Score: {score.total_score:.1f}/100")
 
 st.markdown("---")
-st.markdown("### 📊 Dimension Score Breakdown Across Finalists")
+st.markdown("### 📊 Dimension Score Comparison Across Suppliers")
 
 chart_data = {}
 for supplier, score in ranked_pairs:
