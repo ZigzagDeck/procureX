@@ -7,9 +7,10 @@ from x402.account import PrepaidUSDAccount
 st.set_page_config(page_title="ProcureX — Economic Trace & Quota", layout="wide")
 
 try:
-    from app import apply_custom_css, init_session_state
+    from app import apply_custom_css, init_session_state, render_common_sidebar
     apply_custom_css()
     init_session_state()
+    render_common_sidebar()
 except Exception:
     pass
 
@@ -72,7 +73,7 @@ if session:
     except Exception:
         pass
 
-# Product Vision Section (Updated per user request)
+# Product Vision Section
 st.markdown("### Protocol Transparency & Product Vision")
 
 st.markdown(f"""

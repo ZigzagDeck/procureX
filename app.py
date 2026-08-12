@@ -110,29 +110,8 @@ def apply_custom_css():
     </style>
     """, unsafe_allow_html=True)
 
-def init_session_state():
-    if "research_active" not in st.session_state:
-        st.session_state.research_active = False
-    if "requirement" not in st.session_state:
-        st.session_state.requirement = None
-    if "budget" not in st.session_state:
-        st.session_state.budget = 1000.0
-    if "spent" not in st.session_state:
-        st.session_state.spent = 0.0
-    if "suppliers" not in st.session_state:
-        st.session_state.suppliers = []
-    if "evidence" not in st.session_state:
-        st.session_state.evidence = {}
-    if "transactions" not in st.session_state:
-        st.session_state.transactions = []
-    if "progress_log" not in st.session_state:
-        st.session_state.progress_log = []
-
-def main():
-    apply_custom_css()
-    init_session_state()
-
-    # Sidebar Header at the VERY TOP
+def render_common_sidebar():
+    """Render identical ProcureX sidebar across every single page."""
     st.sidebar.markdown(
         """
         <div style='text-align: center; margin-bottom: 20px; padding-top: 10px;'>
@@ -168,6 +147,29 @@ def main():
         """,
         unsafe_allow_html=True
     )
+
+def init_session_state():
+    if "research_active" not in st.session_state:
+        st.session_state.research_active = False
+    if "requirement" not in st.session_state:
+        st.session_state.requirement = None
+    if "budget" not in st.session_state:
+        st.session_state.budget = 1000.0
+    if "spent" not in st.session_state:
+        st.session_state.spent = 0.0
+    if "suppliers" not in st.session_state:
+        st.session_state.suppliers = []
+    if "evidence" not in st.session_state:
+        st.session_state.evidence = {}
+    if "transactions" not in st.session_state:
+        st.session_state.transactions = []
+    if "progress_log" not in st.session_state:
+        st.session_state.progress_log = []
+
+def main():
+    apply_custom_css()
+    init_session_state()
+    render_common_sidebar()
     
     # Hero Section
     st.markdown("""

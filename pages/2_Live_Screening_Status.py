@@ -8,9 +8,10 @@ from storage.session import ResearchPhase
 st.set_page_config(page_title="ProcureX — Live Screening Status", layout="wide")
 
 try:
-    from app import apply_custom_css, init_session_state
+    from app import apply_custom_css, init_session_state, render_common_sidebar
     apply_custom_css()
     init_session_state()
+    render_common_sidebar()
 except Exception:
     pass
 

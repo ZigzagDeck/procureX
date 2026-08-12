@@ -5,9 +5,10 @@ import streamlit as st
 st.set_page_config(page_title="ProcureX — Discovered Suppliers", layout="wide")
 
 try:
-    from app import apply_custom_css, init_session_state
+    from app import apply_custom_css, init_session_state, render_common_sidebar
     apply_custom_css()
     init_session_state()
+    render_common_sidebar()
 except Exception:
     pass
 

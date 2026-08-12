@@ -1,6 +1,7 @@
 """Final Recommendation Report — Clean executive summary with Markdown and PDF export."""
 
 import streamlit as st
+import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 from fpdf import FPDF
@@ -8,17 +9,21 @@ from fpdf import FPDF
 st.set_page_config(page_title="ProcureX — Final Report", layout="wide")
 
 try:
-    from app import apply_custom_css, init_session_state
+    from app import apply_custom_css, init_session_state, render_common_sidebar
     apply_custom_css()
     init_session_state()
+    render_common_sidebar()
 except Exception:
     pass
 
 def _clean_str(text: str) -> str:
-    """Sanitize strings for FPDF latin-1 font encoding."""
+    """Sanitize strings safely for FPDF latin-1 font encoding."""
     if not text:
         return ""
-    cleaned = text.replace("₹", "Rs. ")
+    # Replace Rupee symbol with 'Rs. '
+    cleaned = str(text).replace("₹", "Rs. ")
+    # Replace any non-latin-1 characters with a space
+    cleaned = re.sub(r'[^\x00-\xFF]', ' ', cleaned)
     return cleaned.encode("latin-1", "replace").decode("latin-1")
 
 def generate_pdf_report(requirement_text, top_supplier, alternatives, spent_usd) -> bytes:
@@ -142,6 +147,10 @@ if top_supplier.products:
     best_price = min(prices) if prices else None
     best_moq = min(moqs) if moqs else None
 
+link_html = f'<a href="{web_url}" target="_blank" style="color:#38bdf8; text-decoration:none; font-weight:600;">🌐 {web_url}</a>' if web_url else f'<span style="color:#94a3b8;">🌐 {site_domain}</span>'
+price_html = f'<div><span style="color:#94a3b8; font-size:0.85rem;">Unit Price</span><br><strong style="font-size:1.4rem; color:white;">₹{best_price:.1f}/pc</strong></div>' if best_price is not None else ''
+moq_html = f'<div><span style="color:#94a3b8; font-size:0.85rem;">MOQ</span><br><strong style="font-size:1.4rem; color:white;">{best_moq:,} pcs</strong></div>' if best_moq is not None else ''
+
 st.markdown(f"""
 <div class="glass-card" style="background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(129,140,248,0.08)); border: 1px solid rgba(56,189,248,0.3);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -149,11 +158,11 @@ st.markdown(f"""
         <span style="background:#0284c7; color:white; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.85rem;">Top Candidate</span>
     </div>
     <div style="margin-bottom: 12px;">
-        {f'<a href="{web_url}" target="_blank" style="color:#38bdf8; text-decoration:none; font-weight:600;">🌐 {web_url}</a>' if web_url else f'<span style="color:#94a3b8;">🌐 {site_domain}</span>'}
+        {link_html}
     </div>
     <div style="display:flex; gap:2rem; flex-wrap:wrap;">
-        {f'<div><span style="color:#94a3b8; font-size:0.85rem;">Unit Price</span><br><strong style="font-size:1.4rem; color:white;">₹{best_price:.1f}/pc</strong></div>' if best_price is not None else ''}
-        {f'<div><span style="color:#94a3b8; font-size:0.85rem;">MOQ</span><br><strong style="font-size:1.4rem; color:white;">{best_moq:,} pcs</strong></div>' if best_moq is not None else ''}
+        {price_html}
+        {moq_html}
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -172,16 +181,20 @@ if len(ranked) > 1:
         alt_url = supplier.website or (supplier.source_urls[0] if supplier.source_urls else None)
         alt_domain = urlparse(alt_url).netloc if alt_url else "Web Directory"
 
+        alt_link_html = f'<a href="{alt_url}" target="_blank" style="color:#38bdf8; text-decoration:none; font-size:0.85rem;">🌐 {alt_domain}</a>' if alt_url else f'<span style="color:#94a3b8; font-size:0.85rem;">🌐 {alt_domain}</span>'
+        alt_price_html = f'<div style="margin-top:6px; font-size:0.9rem; color:#cbd5e1;">Unit Price: <strong>₹{price:.1f}/pc</strong></div>' if price is not None else ''
+        alt_moq_html = f'<div style="margin-top:4px; font-size:0.9rem; color:#cbd5e1;">MOQ: <strong>{moq:,} pcs</strong></div>' if moq is not None else ''
+
         st.markdown(f"""
         <div class="glass-card" style="padding: 1rem 1.2rem; margin-bottom: 0.8rem;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h4 style="margin:0;">#{i} {supplier.name}</h4>
                 <div>
-                    {f'<a href="{alt_url}" target="_blank" style="color:#38bdf8; text-decoration:none; font-size:0.85rem;">🌐 {alt_domain}</a>' if alt_url else f'<span style="color:#94a3b8; font-size:0.85rem;">🌐 {alt_domain}</span>'}
+                    {alt_link_html}
                 </div>
             </div>
-            {(f'<div style="margin-top:6px; font-size:0.9rem; color:#cbd5e1;">Unit Price: <strong>₹' + f'{price:.1f}/pc</strong></div>') if price is not None else ''}
-            {(f'<div style="margin-top:4px; font-size:0.9rem; color:#cbd5e1;">MOQ: <strong>' + f'{moq:,} pcs</strong></div>') if moq is not None else ''}
+            {alt_price_html}
+            {alt_moq_html}
         </div>
         """, unsafe_allow_html=True)
 
