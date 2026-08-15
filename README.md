@@ -1,4 +1,4 @@
-# ProcureX: — Autonomous B2B Procurement Intelligence Engine
+# ProcureX — Autonomous B2B Procurement Intelligence Engine
 
 **ProcureX** is an autonomous AI agent designed to streamline B2B procurement research. It accepts natural language procurement requests, autonomously screens live web search results, normalizes pricing across non-standard units (piece, pair, box), matches technical specifications, and tracks micro-query information buying expenses using an x402 payment protocol simulation.
 
