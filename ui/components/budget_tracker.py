@@ -35,11 +35,11 @@ def render_budget_tracker(budget) -> None:
             service = decision.service_type.value.replace("_", " ").title()
             dual_cost = fx_engine.format_dual(decision.cost)
             st.markdown(
-                textwrap.dedent(f"""<div class="glass-card" style="padding: 0.8rem 1.2rem; margin-bottom: 0.5rem;">
-                {icon} <strong>{service}</strong> for <em>{decision.supplier_name or decision.supplier_id}</em> 
-                — <strong>{'Purchased' if decision.should_purchase else 'Skipped'}</strong> ({dual_cost})<br>
-                <span style="color:#94a3b8; font-size:0.85rem;">Reason: {decision.reason}</span>
-                </div>"""),
+                f"""<div class="glass-card" style="padding: 0.8rem 1.2rem; margin-bottom: 0.5rem;">
+{icon} <strong>{service}</strong> for <em>{decision.supplier_name or decision.supplier_id}</em> 
+— <strong>{'Purchased' if decision.should_purchase else 'Skipped'}</strong> ({dual_cost})<br>
+<span style="color:#94a3b8; font-size:0.85rem;">Reason: {decision.reason}</span>
+</div>""",
                 unsafe_allow_html=True
             )
 
@@ -52,10 +52,10 @@ def render_budget_tracker(budget) -> None:
             service = tx.service_type.value.replace("_", " ").title()
             dual_amount = fx_engine.format_dual(tx.amount)
             st.markdown(
-                textwrap.dedent(f"""<div class="glass-card" style="padding: 0.8rem 1.2rem; margin-bottom: 0.5rem; border-left: 3px solid {'#22c55e' if status == 'completed' else '#ef4444'};">
-                {status_icon} <strong>{service}</strong> — {dual_amount} — Status: <strong>{status.title()}</strong><br>
-                <span style="color:#94a3b8; font-size:0.85rem;">Reason: {tx.decision.reason}</span><br>
-                {f'<span style="color:#94a3b8; font-size:0.85rem;">Response Payload: {tx.response_summary}</span>' if tx.response_summary else ''}
-                </div>"""),
+                f"""<div class="glass-card" style="padding: 0.8rem 1.2rem; margin-bottom: 0.5rem; border-left: 3px solid {'#22c55e' if status == 'completed' else '#ef4444'};">
+{status_icon} <strong>{service}</strong> — {dual_amount} — Status: <strong>{status.title()}</strong><br>
+<span style="color:#94a3b8; font-size:0.85rem;">Reason: {tx.decision.reason}</span><br>
+{f'<span style="color:#94a3b8; font-size:0.85rem;">Response Payload: {tx.response_summary}</span>' if tx.response_summary else ''}
+</div>""",
                 unsafe_allow_html=True
             )
