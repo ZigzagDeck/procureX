@@ -2,6 +2,7 @@
 
 import streamlit as st
 from urllib.parse import urlparse
+import textwrap
 
 
 STATUS_BADGES = {
@@ -30,7 +31,7 @@ def render_evidence_viewer(evidence_graph) -> None:
             domain = urlparse(record.url).netloc if record.url else record.source
 
             st.markdown(
-                f"""<div class="glass-card" style="padding: 1rem; margin-bottom: 0.8rem; border-left: 3px solid {color};">
+                textwrap.dedent(f"""<div class="glass-card" style="padding: 1rem; margin-bottom: 0.8rem; border-left: 3px solid {color};">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="font-weight:700; color:{color};">{icon} {label}</span>
                     <span style="color:#94a3b8; font-size:0.8rem;">Confidence: {record.confidence:.0%}</span>
@@ -42,7 +43,7 @@ def render_evidence_viewer(evidence_graph) -> None:
                 <div style="font-size:0.8rem; color:#64748b; margin-top:4px;">
                     Source: {domain} {f' &bull; <a href="{record.url}" target="_blank" style="color:#38bdf8;">Open Source Link 🔗</a>' if record.url else ''}
                 </div>
-                </div>""",
+                </div>"""),
                 unsafe_allow_html=True,
             )
 

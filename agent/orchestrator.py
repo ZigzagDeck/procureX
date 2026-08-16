@@ -210,161 +210,131 @@ class ResearchOrchestrator:
             session.phase = ResearchPhase.SCORING
             budget_mgr = BudgetManager(session.budget)
             x402_client = X402Client()
-            for s in active:
-                score = self.scoring_engine.score_supplier(s, requirement, delivery=deliveries.get(s.id), evidence_graph=s.evidence)
-                session.scores.append(score)
-
-                risky_product = next((p for p in s.products if (p.price_confidence or 0) < 0.5), None)
-                if not risky_product:
-                    continue
-
-                references = reference_prices_by_category.get(requirement.product_category, [])
-                decision = budget_mgr.should_purchase_price_intel(
-                    s,
-                    score,
-                    price_uncertainty=1 - (risky_product.price_confidence or 0),
-                    reference_data_available=bool(references),
-                )
-                action = "approved" if decision.should_purchase else "skipped"
-                session.add_log(
-                    ResearchPhase.SCORING,
-                    f"Price intelligence {action} for {s.name}: {decision.reason}",
-                    supplier_id=s.id,
-                    reason=decision.reason,
-                )
-                if not decision.should_purchase:
-                    continue
-
-                _, transaction = await x402_client.call_service(
-                    decision.service_type,
-                    {
-                        "product_category": requirement.product_category,
-                        "material": requirement.material,
-                        "quantity": requirement.quantity,
-                        "region": requirement.destination,
-                    },
-                    decision,
-                )
-                session.budget.record_purchase(transaction)
-                session.add_log(
-                    ResearchPhase.INTELLIGENCE,
-                    f"x402 price-intelligence transaction {transaction.status.value} for {s.name}",
-                    transaction_id=transaction.id,
-                    cost=transaction.amount,
-                )
-
-                estimate = get_market_price_estimate(references)
-                market_price = estimate["market_price"]
-                current_price = risky_product.normalized_unit_price
-                if (
-                    transaction.status.value == "completed"
-                    and market_price is not None
-                    and current_price is not None
-                    and (current_price > market_price * 2 or current_price < market_price / 2)
-                ):
-                    risky_product.normalized_unit_price = market_price
-                    risky_product.price_correction_note = (
-                        f"x402 market correction: ₹{current_price:.2f} → ₹{market_price:.2f} per piece "
-                        f"(median of {estimate['sample_size']} high-confidence session prices)"
-                    )
-                    session.add_log(ResearchPhase.RE_RANKING, f"{s.name}: {risky_product.price_correction_note}")
-                    session.scores[-1] = self.scoring_engine.score_supplier(
-                        s, requirement, delivery=deliveries.get(s.id), evidence_graph=s.evidence
-                    )
-            session.scores.sort(key=lambda x: x.total_score, reverse=True)
-            session.add_log(ResearchPhase.SCORING, f'Scored {len(session.scores)} candidate suppliers')
-
-            # 10. x402 Micropayment Simulation & Value-based Information Buying
-            session.phase = ResearchPhase.INTELLIGENCE
-            session.add_log(ResearchPhase.INTELLIGENCE, 'Evaluating value-based x402 information buying decisions...')
-            x402_client = X402Client()
             prepaid_account = PrepaidUSDAccount()
             graph_mgr = EvidenceGraphManager()
             
+            # Initial scoring
+            for s in active:
+                score = self.scoring_engine.score_supplier(s, requirement, delivery=deliveries.get(s.id), evidence_graph=s.evidence)
+                session.scores.append(score)
+            
+            # Re-rank and sort
+            session.scores.sort(key=lambda x: x.total_score, reverse=True)
+            session.add_log(ResearchPhase.SCORING, f'Scored {len(session.scores)} candidate suppliers')
+            
+            # Evaluate value-based information buying
+            session.phase = ResearchPhase.INTELLIGENCE
+            session.add_log(ResearchPhase.INTELLIGENCE, 'Evaluating value-based x402 information buying decisions...')
+            
             finalists_updated = False
             for s in active:
+                # Find current score
                 score_idx = next((i for i, sc in enumerate(session.scores) if sc.supplier_id == s.id), None)
                 if score_idx is None:
                     continue
                 score = session.scores[score_idx]
                 
-                if score.total_score < 50:
+                # We only purchase intelligence for promising candidates (score >= 45)
+                if score.total_score < 45:
                     continue
                 
-                # Check Price Intelligence
-                has_verified_price = False
-                if s.evidence and 'price' in s.evidence.claims:
-                    has_verified_price = any(r.evidence_status == EvidenceStatus.VERIFIED for r in s.evidence.claims['price'])
-                price_uncertainty = 0.5 if not has_verified_price else 0.1
-                
-                decision_price = budget_mgr.should_purchase_price_intel(s, score, price_uncertainty)
-                if decision_price.should_purchase:
-                    if prepaid_account.get_balance() >= decision_price.cost:
-                        if prepaid_account.deduct(decision_price.cost):
-                            session.add_log(ResearchPhase.INTELLIGENCE, f'Purchasing price intelligence for {s.name} via x402 (Cost: ${decision_price.cost:.3f})...')
-                            request_data = {
-                                'product_category': requirement.product_category,
-                                'material': requirement.material,
-                                'quantity': requirement.quantity,
-                                'region': requirement.destination or 'India'
-                            }
-                            result, tx = await x402_client.call_service(ServiceType.PRICE_INTELLIGENCE, request_data, decision_price)
-                            session.budget.record_purchase(tx)
-                            
-                            if result and 'market_price_range' in result:
-                                market_median = result['market_price_range']['median']
-                                rec = create_evidence_record(
-                                    field_name='price',
-                                    value=market_median,
-                                    source='price_intelligence_api',
-                                    confidence=result.get('confidence', 0.85),
-                                    status=EvidenceStatus.VERIFIED,
-                                    raw_snippet=f"Market median price verified: INR {market_median}/pc"
-                                )
-                                if not s.evidence:
-                                    s.evidence = EvidenceGraph(supplier_id=s.id)
-                                graph_mgr.add_evidence(s.evidence, 'price', rec)
-                                finalists_updated = True
+                # 1. Check for Price Intelligence
+                risky_product = next((p for p in s.products if (p.price_confidence or 0) < 0.5), None)
+                if risky_product:
+                    references = reference_prices_by_category.get(requirement.product_category, [])
+                    price_uncert = 1 - (risky_product.price_confidence or 0)
+                    decision_price = budget_mgr.should_purchase_price_intel(
+                        s,
+                        score,
+                        price_uncertainty=price_uncert,
+                        reference_data_available=bool(references)
+                    )
+                    
+                    if decision_price.should_purchase:
+                        if prepaid_account.get_balance() >= decision_price.cost:
+                            if prepaid_account.deduct(decision_price.cost):
+                                session.add_log(ResearchPhase.SCORING, f"Price intelligence approved for {s.name}: {decision_price.reason}")
+                                session.add_log(ResearchPhase.INTELLIGENCE, f'Purchasing price intelligence for {s.name} via x402 (Cost: ${decision_price.cost:.3f})...')
+                                request_data = {
+                                    'product_category': requirement.product_category,
+                                    'material': requirement.material,
+                                    'quantity': requirement.quantity,
+                                    'region': requirement.destination or 'India'
+                                }
+                                result, tx = await x402_client.call_service(ServiceType.PRICE_INTELLIGENCE, request_data, decision_price)
+                                session.budget.record_purchase(tx)
+                                
+                                if tx.status == PaymentStatus.COMPLETED:
+                                    # Perform price correction using reference estimate
+                                    estimate = get_market_price_estimate(references)
+                                    market_price = estimate["market_price"]
+                                    current_price = risky_product.normalized_unit_price
+                                    
+                                    if market_price is not None and current_price is not None:
+                                        risky_product.normalized_unit_price = market_price
+                                        risky_product.price_correction_note = (
+                                            f"x402 market correction: ₹{current_price:.2f} → ₹{market_price:.2f} per piece "
+                                            f"(median of {estimate['sample_size']} high-confidence session prices)"
+                                        )
+                                        session.add_log(ResearchPhase.RE_RANKING, f"{s.name}: {risky_product.price_correction_note}")
+                                        
+                                    # Update evidence graph
+                                    if result and 'market_price_range' in result:
+                                        market_median = result['market_price_range']['median']
+                                        rec = create_evidence_record(
+                                            field_name='price',
+                                            value=market_median,
+                                            source='price_intelligence_api',
+                                            confidence=result.get('confidence', 0.85),
+                                            status=EvidenceStatus.VERIFIED,
+                                            raw_snippet=f"Market median price verified: INR {market_median}/pc"
+                                        )
+                                        if not s.evidence:
+                                            s.evidence = EvidenceGraph(supplier_id=s.id)
+                                        graph_mgr.add_evidence(s.evidence, 'price', rec)
+                                        
+                                    finalists_updated = True
+                            else:
+                                decision_price.reason += " (Prepaid ledger deduction failed)"
                         else:
-                            decision_price.reason += " (Prepaid ledger deduction failed)"
-                    else:
-                        decision_price.reason += " (Insufficient prepaid balance)"
-
-                # Check Supplier Verification
-                verification_score = next((d.raw_score for d in score.dimensions if d.name == 'Business Verification'), 0.2)
+                            decision_price.reason += " (Insufficient prepaid balance)"
                 
-                decision_verify = budget_mgr.should_purchase_verification(s, score, verification_score)
-                if decision_verify.should_purchase:
-                    if prepaid_account.get_balance() >= decision_verify.cost:
-                        if prepaid_account.deduct(decision_verify.cost):
-                            session.add_log(ResearchPhase.INTELLIGENCE, f'Purchasing enhanced supplier verification for {s.name} via x402 (Cost: ${decision_verify.cost:.3f})...')
-                            request_data = {
-                                'supplier_name': s.name,
-                                'gstin': s.gstin,
-                                'udyam_number': s.udyam_number
-                            }
-                            result, tx = await x402_client.call_service(ServiceType.SUPPLIER_VERIFICATION, request_data, decision_verify)
-                            session.budget.record_purchase(tx)
-                            
-                            if s.gstin:
-                                rec = create_evidence_record(
-                                    field_name='gstin',
-                                    value=s.gstin,
-                                    source='gst_portal_enhanced',
-                                    confidence=1.0,
-                                    status=EvidenceStatus.VERIFIED,
-                                    raw_snippet="Enhanced active business verification successful."
-                                )
-                                if not s.evidence:
-                                    s.evidence = EvidenceGraph(supplier_id=s.id)
-                                graph_mgr.add_evidence(s.evidence, 'gstin', rec)
-                                finalists_updated = True
+                # 2. Check for Supplier Verification (Only if they have a valid 15-character GSTIN)
+                if s.gstin and len(s.gstin) == 15:
+                    verification_score = next((d.raw_score for d in score.dimensions if d.name == 'Business Verification'), 0.2)
+                    decision_verify = budget_mgr.should_purchase_verification(s, score, verification_score)
+                    
+                    if decision_verify.should_purchase:
+                        if prepaid_account.get_balance() >= decision_verify.cost:
+                            if prepaid_account.deduct(decision_verify.cost):
+                                session.add_log(ResearchPhase.INTELLIGENCE, f'Purchasing enhanced supplier verification for {s.name} via x402 (Cost: ${decision_verify.cost:.3f})...')
+                                request_data = {
+                                    'supplier_name': s.name,
+                                    'gstin': s.gstin,
+                                    'address': s.address
+                                }
+                                result, tx = await x402_client.call_service(ServiceType.SUPPLIER_VERIFICATION, request_data, decision_verify)
+                                session.budget.record_purchase(tx)
+                                
+                                if tx.status == PaymentStatus.COMPLETED:
+                                    rec = create_evidence_record(
+                                        field_name='gstin',
+                                        value=s.gstin,
+                                        source='gst_portal_enhanced',
+                                        confidence=1.0,
+                                        status=EvidenceStatus.VERIFIED,
+                                        raw_snippet="Enhanced active business verification successful."
+                                    )
+                                    if not s.evidence:
+                                        s.evidence = EvidenceGraph(supplier_id=s.id)
+                                    graph_mgr.add_evidence(s.evidence, 'gstin', rec)
+                                    finalists_updated = True
+                            else:
+                                decision_verify.reason += " (Prepaid ledger deduction failed)"
                         else:
-                            decision_verify.reason += " (Prepaid ledger deduction failed)"
-                    else:
-                        decision_verify.reason += " (Insufficient prepaid balance)"
+                            decision_verify.reason += " (Insufficient prepaid balance)"
             
-            # Re-rank and sort if any finalists updated their evidence profiles
+            # Re-rank and sort if any finalists updated their profiles
             if finalists_updated:
                 session.phase = ResearchPhase.RE_RANKING
                 session.add_log(ResearchPhase.RE_RANKING, 'Re-scoring and re-ranking suppliers with new information...')

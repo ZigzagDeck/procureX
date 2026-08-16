@@ -17,7 +17,10 @@ except Exception:
 st.markdown("<h1>Economic Trace & <span class='gradient-text'>Quota Tracker</span></h1>", unsafe_allow_html=True)
 st.markdown("*Autonomous research budget allocation, live FX conversion, and x402 micropayment quota tracker.*")
 
-fx_engine = FXEngine()
+if "fx_engine" not in st.session_state:
+    st.session_state.fx_engine = FXEngine()
+fx_engine = st.session_state.fx_engine
+
 account = PrepaidUSDAccount()
 current_rate = fx_engine.get_rate()
 
@@ -67,11 +70,8 @@ with top_col2:
 st.markdown("---")
 
 if session:
-    try:
-        from ui.components.budget_tracker import render_budget_tracker
-        render_budget_tracker(session.budget)
-    except Exception:
-        pass
+    from ui.components.budget_tracker import render_budget_tracker
+    render_budget_tracker(session.budget)
 
 # Product Vision Section
 st.markdown("### Protocol Transparency & Product Vision")
