@@ -102,6 +102,7 @@ if budget.transactions:
             f"""<div class="glass-card" style="padding:1rem; border-left: 3px solid {'#22c55e' if status == 'completed' else '#ef4444' if status == 'failed' else '#eab308'};">
             {status_icon} <strong>{service}</strong> — ${tx.amount:.3f} {tx.currency}<br>
             <span style="color:#94a3b8;">Status:</span> {status.title()}<br>
+            <span style="color:#94a3b8;">Reason:</span> {tx.decision.reason}<br>
             <span style="color:#94a3b8;">Created:</span> {tx.created_at.strftime('%Y-%m-%d %H:%M:%S') if tx.created_at else 'N/A'}
             {f'<br><span style="color:#94a3b8;">Response:</span> {tx.response_summary}' if tx.response_summary else ''}
             {f'<br><span style="color:#ef4444;">Error:</span> {tx.error_message}' if tx.error_message else ''}

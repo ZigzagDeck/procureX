@@ -1,6 +1,17 @@
 """Price normalization for Indian B2B procurement."""
 from models.supplier import PriceBasis, TaxStatus
 
+
+def estimate_price_confidence(price_basis: PriceBasis) -> float:
+    """Return confidence in a normalized per-piece price.
+
+    Pack and total prices cannot be reliably normalized when the extractor did
+    not capture their denominator, so they deliberately stay low-confidence.
+    """
+    if price_basis in (PriceBasis.PER_BOX, PriceBasis.PER_CARTON, PriceBasis.TOTAL):
+        return 0.25
+    return 0.9
+
 class PriceNormalizer:
     GST_RATE = 0.18
     def normalize_unit_price(self, price_value, price_basis, tax_status, quantity_in_pack=1, total_quantity=1):
@@ -21,3 +32,4 @@ class PriceNormalizer:
         if ratio <= 0.5: return 1.0
         elif ratio <= 1.0: return 1.0 - (ratio - 0.5) * 1.0
         else: return max(0.0, 0.5 - (ratio - 1.0) * 0.5)
+        

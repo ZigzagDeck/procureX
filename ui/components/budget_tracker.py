@@ -53,6 +53,7 @@ def render_budget_tracker(budget) -> None:
             st.markdown(
                 f"""<div class="glass-card" style="padding: 0.8rem 1.2rem; margin-bottom: 0.5rem; border-left: 3px solid {'#22c55e' if status == 'completed' else '#ef4444'};">
                 {status_icon} <strong>{service}</strong> — {dual_amount} — Status: <strong>{status.title()}</strong><br>
+                <span style="color:#94a3b8; font-size:0.85rem;">Reason: {tx.decision.reason}</span><br>
                 {f'<span style="color:#94a3b8; font-size:0.85rem;">Response Payload: {tx.response_summary}</span>' if tx.response_summary else ''}
                 </div>""",
                 unsafe_allow_html=True

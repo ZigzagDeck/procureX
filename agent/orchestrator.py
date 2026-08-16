@@ -2,13 +2,15 @@
 from storage.session import ResearchSession, ResearchPhase
 from acquisition.web_search import WebSearchSource
 from extraction.supplier_extractor import SupplierExtractor
-from processing.price_normalizer import PriceNormalizer
+from processing.price_normalizer import PriceNormalizer, estimate_price_confidence
 from processing.entity_resolver import EntityResolver
 from processing.product_matcher import ProductMatcher
 from processing.scoring import ScoringEngine
 from processing.geographic import GeographicAnalyzer
 from verification.evidence_collector import EvidenceCollector
 from agent.budget_manager import BudgetManager
+from x402.client import X402Client
+from intelligence.price_intelligence import get_market_price_estimate
 from agent.planner import ResearchPlanner
 from models.supplier import Supplier, Product, SupplierType, PriceBasis, TaxStatus
 from datetime import date, datetime, timezone
@@ -146,8 +148,10 @@ class ResearchOrchestrator:
                                 material=requirement.material or "nitrile",
                                 application="industrial_safety",
                                 size="M",
-                                price_value=round(target_price * 0.97, 1),
-                                price_basis=PriceBasis.PER_PIECE,
+                                # Deliberately missing pack quantity: this exercises the
+                                # paid price-intelligence correction in offline demos.
+                                price_value=round(target_price * 3.0, 1),
+                                price_basis=PriceBasis.PER_BOX,
                                 tax_status=TaxStatus.GST_EXCLUSIVE,
                                 moq=500,
                                 source_url="https://www.sriso.in/safety-gloves.html"
@@ -158,10 +162,14 @@ class ResearchOrchestrator:
                 session.suppliers.extend(fallback_suppliers)
 
             session.phase = ResearchPhase.NORMALIZING
+            reference_prices_by_category = {}
             for s in session.suppliers:
                 for p in s.products:
                     if p.price_value and not p.normalized_unit_price:
                         p.normalized_unit_price = self.price_normalizer.normalize_unit_price(p.price_value, p.price_basis, p.tax_status)
+                    p.price_confidence = estimate_price_confidence(p.price_basis)
+                    if p.price_confidence >= 0.5 and p.normalized_unit_price:
+                        reference_prices_by_category.setdefault(requirement.product_category, []).append(p.normalized_unit_price)
             session.add_log(ResearchPhase.NORMALIZING, 'Price normalization complete')
 
             session.phase = ResearchPhase.DEDUPLICATING
@@ -196,14 +204,73 @@ class ResearchOrchestrator:
 
             session.phase = ResearchPhase.SCORING
             budget_mgr = BudgetManager(session.budget)
+            x402_client = X402Client()
             for s in active:
                 score = self.scoring_engine.score_supplier(s, requirement, delivery=deliveries.get(s.id), evidence_graph=s.evidence)
                 session.scores.append(score)
+
+                risky_product = next((p for p in s.products if (p.price_confidence or 0) < 0.5), None)
+                if not risky_product:
+                    continue
+
+                references = reference_prices_by_category.get(requirement.product_category, [])
+                decision = budget_mgr.should_purchase_price_intel(
+                    s,
+                    score,
+                    price_uncertainty=1 - (risky_product.price_confidence or 0),
+                    reference_data_available=bool(references),
+                )
+                action = "approved" if decision.should_purchase else "skipped"
+                session.add_log(
+                    ResearchPhase.SCORING,
+                    f"Price intelligence {action} for {s.name}: {decision.reason}",
+                    supplier_id=s.id,
+                    reason=decision.reason,
+                )
+                if not decision.should_purchase:
+                    continue
+
+                _, transaction = await x402_client.call_service(
+                    decision.service_type,
+                    {
+                        "product_category": requirement.product_category,
+                        "material": requirement.material,
+                        "quantity": requirement.quantity,
+                        "region": requirement.destination,
+                    },
+                    decision,
+                )
+                session.budget.record_purchase(transaction)
+                session.add_log(
+                    ResearchPhase.INTELLIGENCE,
+                    f"x402 price-intelligence transaction {transaction.status.value} for {s.name}",
+                    transaction_id=transaction.id,
+                    cost=transaction.amount,
+                )
+
+                estimate = get_market_price_estimate(references)
+                market_price = estimate["market_price"]
+                current_price = risky_product.normalized_unit_price
+                if (
+                    transaction.status.value == "completed"
+                    and market_price is not None
+                    and current_price is not None
+                    and (current_price > market_price * 2 or current_price < market_price / 2)
+                ):
+                    risky_product.normalized_unit_price = market_price
+                    risky_product.price_correction_note = (
+                        f"x402 market correction: ₹{current_price:.2f} → ₹{market_price:.2f} per piece "
+                        f"(median of {estimate['sample_size']} high-confidence session prices)"
+                    )
+                    session.add_log(ResearchPhase.RE_RANKING, f"{s.name}: {risky_product.price_correction_note}")
+                    session.scores[-1] = self.scoring_engine.score_supplier(
+                        s, requirement, delivery=deliveries.get(s.id), evidence_graph=s.evidence
+                    )
             session.scores.sort(key=lambda x: x.total_score, reverse=True)
             session.add_log(ResearchPhase.SCORING, f'Scored {len(session.scores)} candidate suppliers')
 
             session.phase = ResearchPhase.COMPLETED
             session.add_log(ResearchPhase.COMPLETED, 'Live screening and candidate evaluation complete!')
         except Exception as e:
-            session.phase = ResearchPhase.ERROR
-            session.add_log(ResearchPhase.ERROR, f'Research pipeline error: {e}')
+            session.phase = ResearchPhase.FAILED
+            session.add_log(ResearchPhase.FAILED, f'Research pipeline error: {e}')

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 180" role="img" aria-labelledby="title desc">
+  <title id="title">ProcureX logo</title>
+  <desc id="desc">A connected procurement mark followed by the ProcureX wordmark.</desc>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+    <filter id="s" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#38bdf8" flood-opacity=".28"/></filter>
+  </defs>
+  <rect width="760" height="180" rx="32" fill="#0f172a"/>
+  <g filter="url(#s)" transform="translate(36 36)">
+    <path d="M54 0 104 29v58l-50 29L4 87V29z" fill="url(#g)"/><path d="m54 20 32 18v40L54 96 22 78V38z" fill="#0f172a" opacity=".9"/>
+    <circle cx="54" cy="58" r="11" fill="#f8fafc"/><path d="M54 58 85 39M54 58 23 78M54 58 54 20" stroke="#f8fafc" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="85" cy="39" r="7" fill="#f8fafc"/><circle cx="23" cy="78" r="7" fill="#f8fafc"/><circle cx="54" cy="20" r="7" fill="#f8fafc"/>
+  </g>
+  <text x="174" y="88" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="800" letter-spacing="-3">Procure</text><text x="468" y="88" fill="#38bdf8" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="800" letter-spacing="-3">X</text>
+  <text x="178" y="123" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" letter-spacing="3">PROCUREMENT INTELLIGENCE</text>
+</svg>
