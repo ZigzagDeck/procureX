@@ -14,6 +14,11 @@ from intelligence.price_intelligence import get_market_price_estimate
 from agent.planner import ResearchPlanner
 from models.supplier import Supplier, Product, SupplierType, PriceBasis, TaxStatus
 from datetime import date, datetime, timezone
+from x402.account import PrepaidUSDAccount
+from models.budget import ServiceType, PaymentStatus
+from verification.evidence_graph import EvidenceGraphManager
+from extraction.provenance import create_evidence_record
+from models.evidence import EvidenceStatus, EvidenceGraph
 
 class ResearchOrchestrator:
     def __init__(self):
@@ -272,14 +277,6 @@ class ResearchOrchestrator:
             # 10. x402 Micropayment Simulation & Value-based Information Buying
             session.phase = ResearchPhase.INTELLIGENCE
             session.add_log(ResearchPhase.INTELLIGENCE, 'Evaluating value-based x402 information buying decisions...')
-            
-            from x402.client import X402Client
-            from x402.account import PrepaidUSDAccount
-            from models.budget import ServiceType, PaymentStatus
-            from verification.evidence_graph import EvidenceGraphManager
-            from extraction.provenance import create_evidence_record
-            from models.evidence import EvidenceStatus, EvidenceGraph
-
             x402_client = X402Client()
             prepaid_account = PrepaidUSDAccount()
             graph_mgr = EvidenceGraphManager()
