@@ -55,6 +55,8 @@ class Product(BaseModel):
     tax_status: TaxStatus = TaxStatus.UNKNOWN
     currency: str = "INR"
     normalized_unit_price: Optional[float] = None  # INR per piece, GST-exclusive
+    price_confidence: Optional[float] = None
+    price_correction_note: str = ""
     moq: Optional[int] = None
     packaging: str = ""
     specifications: dict[str, str] = Field(default_factory=dict)

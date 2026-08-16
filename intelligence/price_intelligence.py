@@ -1,6 +1,19 @@
 from models.supplier import Supplier
 from datetime import datetime, timezone
 import random
+from statistics import median
+
+
+def get_market_price_estimate(reference_prices: list[float]) -> dict:
+    """Build an offline market-price estimate from trusted session prices."""
+    prices = [price for price in reference_prices if price is not None and price > 0]
+    if not prices:
+        return {"market_price": None, "sample_size": 0, "basis": "INR per piece"}
+    return {
+        "market_price": round(float(median(prices)), 2),
+        "sample_size": len(prices),
+        "basis": "INR per piece",
+    }
 
 class PriceIntelligenceService:
     """Generates market price intelligence for a product category."""

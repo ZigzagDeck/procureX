@@ -4,7 +4,7 @@ import streamlit as st
 from urllib.parse import urlparse
 
 
-def render_supplier_card(supplier, rank=None) -> None:
+def render_supplier_card(supplier, score=None, rank=None) -> None:
     """Render a supplier cleanly as a rank-wise list item without score or product description clutter."""
     rank_display = f"#{rank}" if rank else ""
 
@@ -47,3 +47,7 @@ def render_supplier_card(supplier, rank=None) -> None:
         cols = st.columns(len(available_cols))
         for i, (label, val) in enumerate(available_cols):
             cols[i].metric(label, val)
+
+    for product in supplier.products:
+        if product.price_correction_note:
+            st.info(f"Price correction: {product.price_correction_note}", icon="💳")
